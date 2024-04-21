@@ -45,14 +45,10 @@ static int16_t mc_torque_feedback = 0;
 static int16_t mc_vd = 0;
 static int16_t mc_vq = 0;
 
-
-
 // state machine for motor controller
 static mc_state_t motor_controller_state = MC_DISABLED;
 
 static void update_heartbeat();
-
-
 
 static void enableRegReading(uint8_t reg, uint8_t freq);
 
@@ -312,6 +308,10 @@ void mc_process_diagnostic_data_can(uint8_t * data){
     //TODO: MC_FUNCTION diagnostic data ¯\_(ツ)_/¯
 }
 
+/**
+ * @brief Log the current bus voltage and rpm of the motor controller
+ * @param data: data from the can bus
+ */
 void mc_process_fast_can(uint8_t * data) {
 
     update_heartbeat();
@@ -328,10 +328,14 @@ void mc_process_torque_capability_can(uint8_t * data){
     //TODO: MC_FUNCTION process torque capability
 }
 
+/**
+ * @brief Clears errors in the motor controller
+ *
+ */
 void fixFaults() {
 	uint8_t len = 8;
 	uint8_t data[len];
-	uint8_t dest = 0xC1;
+	uint8_t dest = MC_PARAM_COMMAND_MSG;
 
 	uint8_t ret = 0;
 
@@ -352,13 +356,6 @@ void fixFaults() {
 	}
 }
 
-
-
-
-
-
-
-
 void mc_process_volt_can(uint8_t * data) {
 	bus_voltage = (data[1] << 8) | data[0];
 	mc_output_voltage = (data[3] << 8) | data[2];
@@ -370,8 +367,6 @@ void mc_process_motor_can(uint8_t * data) {
 	mc_rpm = (data[3] << 8) | data[2];
 }
 
-
-
 void mc_process_current_can(uint8_t * data) {
 	mc_currentA = (data[1] << 8) | data[0];
 	mc_currentB = (data[3] << 8) | data[2];
@@ -379,8 +374,6 @@ void mc_process_current_can(uint8_t * data) {
 	bus_current = (data[7] << 8) | data[6];
 	logSensor((float) bus_current, MC_I_ACTUAL_LOG);
 }
-
-
 
 /**
  *	Sent whenever a torque request is read by the APPS
@@ -458,8 +451,7 @@ void sendTorque(int16_t torque) {
  * @param RW: Read/Write. 0x1 -> write, 0x0 -> read.
  * @param Data: data to be sent, length must be 2 bytes. Data[0] goes to byte 4, Data[1] goes to byte 5.
  */
-void mc_send_param_command_message(uint8_t param_address, uint8_t RW,
-		uint8_t * Data) {
+void mc_send_param_command_message(uint8_t param_address, uint8_t RW, uint8_t * Data) {
 	uint8_t len = 8;
 	uint8_t data[8];
 	uint8_t dest = MC_PARAM_COMMAND_MSG;

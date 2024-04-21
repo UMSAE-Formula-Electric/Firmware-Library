@@ -5,6 +5,8 @@
 
 #include "stdint.h"
 
+//Defines
+
 #define TORQUE_MODE			0
 #define SPEED_MODE			1
 
@@ -38,10 +40,9 @@
 #define CAN_MC_RX_HIGHSPEED					0x0B0
 #define CAN_MC_RX_TORQUE_CAPABILITY			0x0B1
 
-
-
 #define PEAK_TORQUE			230	//Peak torque for EMRAX 228 motor
 
+//Function headers
 static int16_t bus_voltage;
 static int16_t bus_current;
 static int16_t mc_currentA;
@@ -65,6 +66,7 @@ static int16_t mc_torque_limit;
 static int16_t mc_torque;
 static int16_t mc_speed;
 
+//Getters
 float mc_getBusVoltage();
 float mc_getBusCurrent();
 float mc_getIGBTACurrent();
@@ -82,6 +84,7 @@ float mc_getFeedbackTorque();
 float mc_get_vd();
 float mc_get_vq();
 
+//Setters
 void mc_set_torque_limit(int setTorque);
 void mc_set_torque(int setTorque);
 void mc_set_speed(int setSpeed);
@@ -90,7 +93,7 @@ void mc_set_inverter_enable(uint8_t setEnable);
 void mc_set_inverter_discharge(uint8_t setEnable);
 uint8_t isMCBusCharged();
 
-
+//Can messaging processing
 void mc_process_temp1_can(uint8_t * data);
 void mc_process_temp2_can(uint8_t * data); // This currently does nothing and is only made for the fact that the CAN pdf states that this should exist
 void mc_process_temp3_can(uint8_t * data);
@@ -111,20 +114,25 @@ void mc_process_torque_capability_can(uint8_t * data);
 
 void sendTorque(int16_t);
 
+// Motor Controller send message
 void mc_send_command_msg(uint8_t mode);
 void mc_send_param_command_message(uint8_t param_address, uint8_t RW, uint8_t * Data);
 
+// Motor controller broadcasting messaging
 void mc_enable_broadcast_msgs();
 void mc_disable_broadcast_msgs();
 
-typedef enum{
-	MC_DISABLED = 0,
-	MC_ENABLED
-}mc_state_t;
-
+//Motor controller modifying states
 void UpdateMCState(int16_t mc_trottle_val);
 void EnableMC();
 void DisableMC();
 
+//Clear faults in motor controller
 void fixFaults();
+
+//Enumerated Values for changing motor controller state
+typedef enum{
+    MC_DISABLED = 0,
+    MC_ENABLED = 1
+}mc_state_t;
 #endif
