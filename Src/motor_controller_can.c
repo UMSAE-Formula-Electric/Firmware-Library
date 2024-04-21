@@ -254,27 +254,9 @@ void mc_process_faults_can(uint8_t * inData) {
         //resolver fault
         DisableMC();
         sendTorque(0);
-        uint8_t len = 8;
-        uint8_t data[len];
-        uint8_t dest = 0xC1;
 
-        uint8_t ret = 0;
+        fixFaults();
 
-        data[0] = 20;
-        data[1] = 0;
-        data[2] = 1;
-        data[3] = 0;
-        data[4] = 0;
-        data[5] = 0;
-        data[6] = 0;
-        data[7] = 0;
-
-        ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
-        if (ret != 0) {
-            //can error, log it
-            log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-            logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
-        }
         sendTorque(0);
         vTaskDelay(pdMS_TO_TICKS(100));
         EnableMC();
@@ -335,7 +317,7 @@ void mc_process_torque_capability_can(uint8_t * data){
 void fixFaults() {
 	uint8_t len = 8;
 	uint8_t data[len];
-	uint8_t dest = MC_PARAM_COMMAND_MSG;
+	uint8_t dest = 0xC1;
 
 	uint8_t ret = 0;
 
