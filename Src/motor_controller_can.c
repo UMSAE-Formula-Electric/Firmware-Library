@@ -317,7 +317,7 @@ void mc_process_torque_capability_can(uint8_t * data){
 void fixFaults() {
 	uint8_t len = 8;
 	uint8_t data[len];
-	uint8_t dest = 0xC1;
+	uint8_t dest = MC_PARAM_COMMAND_MSG;
 
 	uint8_t ret = 0;
 
