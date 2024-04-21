@@ -249,7 +249,7 @@ void mc_process_digital_input_status_can(uint8_t * data){
     //TODO: MC_FUNCTION digital input status
 }
 
-void mc_process_faults_can(uint8_t * inData) {
+void mc_process_fault_can(uint8_t * inData) {
     if((inData[7] & 64) || 1) {
         //resolver fault
         DisableMC();
