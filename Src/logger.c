@@ -95,7 +95,7 @@ void logMessage(char *data, bool critical) {
 	if (VCU_loggingReady && LOGGING_INITIALIZED) {
 		nullTerminate(data);
         HAL_USART_Transmit(&husart2, (uint8_t *)data, strlen(data), 10);
-        while (HAL_USART_GetState(&husart2) == HAL_USART_STATE_BUSY_TX);
+//        while (HAL_USART_GetState(&husart2) == HAL_USART_STATE_BUSY_TX);
 //		int sliceAmount = strlen(data - 1) / 8 + 1;
 //
 //		int letterCounter = 0;
