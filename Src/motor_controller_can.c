@@ -8,7 +8,6 @@
 #include "can.h"
 #include "logger.h"
 #include "error_handler.h"
-#include "global_board_config.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "heartbeat.h"
@@ -330,7 +329,7 @@ void fixFaults() {
 	data[6] = 0;
 	data[7] = 0;
 
-	ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+	ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
 	if (ret != 0) {
 		//can error, log it
 		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
@@ -391,7 +390,7 @@ void mc_send_command_msg(uint8_t mode) {
 		data[7] = (mc_torque_limit >> 8) & 0xFF;
 	}
 
-	ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+	ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
 	if (ret != 0) {
 		//can error, log it
 		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
@@ -417,7 +416,7 @@ void sendTorque(int16_t torque) {
 		data[6] = 0x00;
 		data[7] = 0x00;
 
-		ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+		ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
 		if (ret != 0) {
 			//can error, log it
 			log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
@@ -449,7 +448,7 @@ void mc_send_param_command_message(uint8_t param_address, uint8_t RW, uint8_t * 
 	data[6] = 0x00;		//Reserved
 	data[7] = 0x00;		//Reserved
 
-	//ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+	//ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
 	//if (ret != 0) {
 		//can error, log it
 
