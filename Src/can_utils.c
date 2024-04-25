@@ -9,6 +9,37 @@
 #include "can_utils.h"
 #include "logger.h"
 
+void buildTxPacket(const uint8_t *data, int32_t length, uint32_t dest, uint8_t isRTR, uint8_t isExtended,
+                   CAN_TxPacketTypeDef *TxPacket) {
+    TxPacket->txPacketHeader.RTR = isRTR ? CAN_RTR_REMOTE : CAN_RTR_DATA;
+    TxPacket->txPacketHeader.IDE = isExtended ? CAN_ID_EXT : CAN_ID_STD;
+    TxPacket->txPacketHeader.ExtId = isExtended ? dest : TxPacket->txPacketHeader.ExtId;
+    TxPacket->txPacketHeader.StdId = isExtended ? TxPacket->txPacketHeader.StdId : dest;
+    TxPacket->txPacketHeader.DLC = length;
+
+    for(int i = 0; i < length; i++){
+        TxPacket->txPacketData[i] = data[i];
+    }
+}
+
+uint8_t addMsgToCanTxQueue(CAN_TxPacketTypeDef *TxPacket) {
+    uint8_t sendSuccess = 0x0;
+
+    if (osMessageQueuePut(canTxPacketQueueHandle, TxPacket, 0, 0) == osOK) {
+        logMessage("Added message to the CAN Tx Queue.\r\n", false);
+        return sendSuccess;
+    }
+
+    uint32_t currQueueSize = osMessageQueueGetCount(canTxPacketQueueHandle);
+    uint32_t maxQueueCapacity = osMessageQueueGetCapacity(canTxPacketQueueHandle);
+    if (currQueueSize == maxQueueCapacity) {  /* Queue is full */
+        logMessage("Error adding message to transmit to the CAN Tx Queue because the queue is full.\r\n", false);
+    }
+
+    sendSuccess = 0x1;
+    return sendSuccess;
+}
+
 /**
   * @brief  send a can message, delays until sent confirmed.
   * @param  hcan: where x can be 1 or 2 to select the CAN peripheral.
@@ -20,6 +51,7 @@
   * @retval 0 on success, 1 if timeout, 2 hcan not init, 3 length too long
   */
 uint8_t sendCan(CAN_HandleTypeDef *hcan, uint8_t const *data, int32_t length, uint32_t dest, uint8_t isRTR, uint8_t isExtended){
+    CAN_TxPacketTypeDef TxPacket;
     uint8_t sendSuccess = 0x0;
 
     //check the length of the data
@@ -27,35 +59,12 @@ uint8_t sendCan(CAN_HandleTypeDef *hcan, uint8_t const *data, int32_t length, ui
         sendSuccess = 0x3;
         return sendSuccess;
     }
-    //check type of message to send
-    if(isRTR){
-        TxHeader.RTR = CAN_RTR_REMOTE;
-    }
-    else{
-        TxHeader.RTR = CAN_RTR_DATA;
-    }
-    if(isExtended){
-        TxHeader.IDE = CAN_ID_EXT;
-        TxHeader.ExtId = dest;
-    }
-    else{
-        TxHeader.IDE = CAN_ID_STD;
-        TxHeader.StdId = dest;
-    }
-    //copy data
-    for(int i = 0; i < length; i++){
-        TxData[i] = data[i];
-    }
-    TxHeader.DLC = length;
 
-    //send the can message
-    if (HAL_CAN_AddTxMessage(hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
-        logMessage("VCU couldn't send a message to the CAN Bus.\r\n", true);
-    }
-    else {
-        logMessage("VCU sent a message to the CAN Bus.\r\n", true);
-        sendSuccess = 0x1;
-    }
+    //build the can packet
+    buildTxPacket(data, length, dest, isRTR, isExtended, &TxPacket);
+
+    //add the can message to the queue
+    sendSuccess = addMsgToCanTxQueue(&TxPacket);
 
     return sendSuccess;
 }

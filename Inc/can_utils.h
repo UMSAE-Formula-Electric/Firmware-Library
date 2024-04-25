@@ -11,6 +11,7 @@
 /* Defines */
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
+#include "cmsis_os2.h"
 
 #define CAN_MC_QUEUE_LENGTH 		64
 #define CAN_AMS_QUEUE_LENGTH 		64
@@ -48,9 +49,18 @@
 #define CAN_EXT 				1
 #define CAN_NO_EXT 				0
 
-extern CAN_TxHeaderTypeDef TxHeader;
-extern uint8_t TxData[8];
-extern uint32_t TxMailbox;
+extern osMessageQueueId_t canRxPacketQueueHandle;
+extern osMessageQueueId_t canTxPacketQueueHandle;
+
+typedef struct {
+    CAN_RxHeaderTypeDef rxPacketHeader;
+    uint8_t rxPacketData[8];
+} CAN_RxPacketTypeDef;
+
+typedef struct {
+    CAN_TxHeaderTypeDef txPacketHeader;
+    uint8_t txPacketData[8];
+} CAN_TxPacketTypeDef;
 
 /* End Defines */
 
