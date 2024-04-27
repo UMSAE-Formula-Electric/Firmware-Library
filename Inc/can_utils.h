@@ -51,6 +51,7 @@
 
 extern osMessageQueueId_t canRxPacketQueueHandle;
 extern osMessageQueueId_t canTxPacketQueueHandle;
+extern CAN_HandleTypeDef hcan1;
 
 typedef struct {
     CAN_RxHeaderTypeDef rxPacketHeader;
