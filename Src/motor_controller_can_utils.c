@@ -4,13 +4,12 @@
  *
  */
 
-#include "motor_controller_can.h"
-#include "can.h"
+#include "motor_controller_can_utils.h"
+#include "can_utils.h"
 #include "logger.h"
 #include "error_handler.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "heartbeat.h"
 
 //busvoltage at 333V, 90% of full bus voltage is ~300
 //meausred using bench top power supply powered to 270V, then added 100 margin
@@ -294,9 +293,6 @@ void mc_process_diagnostic_data_can(uint8_t * data){
  * @param data: data from the can bus
  */
 void mc_process_fast_can(uint8_t * data) {
-
-    update_heartbeat();
-
     mc_torque_command = (data[1] << 8) | data[0];
     mc_torque_feedback = (data[3] << 8) | data[2];
     mc_rpm = (data[5] << 8) | data[4];
@@ -396,33 +392,30 @@ void mc_send_command_msg(uint8_t mode) {
 		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
 		logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
 	}
-	return;
-
 }
 
 void sendTorque(int16_t torque) {
 	uint8_t len = 8; // DLC MUST be 8 for command message, this is the sendCan bug
-		uint8_t data[len];
-		uint8_t dest = 0xC0;
+    uint8_t data[len];
+    uint8_t dest = 0xC0;
 
-		uint8_t ret = 0;
+    uint8_t ret = 0;
 
-		data[0] = torque & 0xFF;
-		data[1] = (torque >> 8) & 0xFF;
-		data[2] = 0x00;
-		data[3] = 0x00;
-		data[4] = mc_direction;
-		data[5] = mc_enable_inverter;
-		data[6] = 0x00;
-		data[7] = 0x00;
+    data[0] = torque & 0xFF;
+    data[1] = (torque >> 8) & 0xFF;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = mc_direction;
+    data[5] = mc_enable_inverter;
+    data[6] = 0x00;
+    data[7] = 0x00;
 
-		ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
-		if (ret != 0) {
-			//can error, log it
-			log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-			logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
-		}
-		return;
+    ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+    if (ret != 0) {
+        //can error, log it
+        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
+        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+    }
 }
 
 /**
@@ -481,21 +474,6 @@ void mc_disable_broadcast_msgs() {
 
 	mc_send_param_command_message(CAN_MC_ACTIVE_MESSAGES, MC_COMMAND_WRITE,
 			data);
-}
-
-/*
- *
- *
- * @Brief: this function updates the heartbeat task to the presence of the
- * motor controller
- */
-void update_heartbeat() {
-	TaskHandle_t task = NULL;
-	task = heartbeat_MC_get_task();
-	if (task != NULL) {
-		xTaskNotify(task, 0, eNoAction);
-        osThreadFlagsSet(task, 0x01);
-	}
 }
 
 void EnableMC() {
