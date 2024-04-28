@@ -136,6 +136,12 @@ static int16_t mc_torque_limit;
 static int16_t mc_torque;
 static int16_t mc_speed;
 
+// analog inputs voltages
+static int16_t mc_analog_input1;
+static int16_t mc_analog_input2;
+static int16_t mc_analog_input3;
+static int16_t mc_analog_input4;
+
 //Firmware information
 static int16_t mc_EEPROM_ver;
 static int16_t mc_software_ver;
