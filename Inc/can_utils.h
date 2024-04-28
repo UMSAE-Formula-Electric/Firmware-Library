@@ -37,6 +37,14 @@
 #define CAN_AMS_CAN_ID          0x70
 #define CAN_VCU_LOG_ID			0x71 //ID for sending VCU data to ACB
 
+/* HeartBeats */
+#define CAN_ACU_TO_VCU_ID 0x200
+#define CAN_ACU_TO_SCU_ID 0x201
+#define CAN_VCU_TO_ACU_ID 0x202
+#define CAN_VCU_TO_SCU_ID 0x203
+#define CAN_SCU_TO_ACU_ID 0x204
+#define CAN_SCU_TO_VCU_ID 0x205
+
 #define CAN_BMS_BASE_ID         0x10
 
 #define CAN_BMS_OVERALL_ID		CAN_BMS_BASE_ID + 0
