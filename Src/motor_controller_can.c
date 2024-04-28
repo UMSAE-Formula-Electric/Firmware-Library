@@ -26,12 +26,24 @@ static int16_t mc_torque_limit = 0;
 static int16_t mc_torque = 0;
 static int16_t mc_speed = 0;
 
-
+//temp 1
 static int16_t mc_igbtA_temp = 0;
 static int16_t mc_igbtB_temp = 0;
 static int16_t mc_igbtC_temp = 0;
+
+//temp 3
 static int16_t mc_motor_temp = 0;
 
+
+//Digital inputs
+static int8_t mc_forward_switch = 0;
+static int8_t mc_reverse_switch = 0;
+static int8_t mc_brake_switch = 0;
+static int8_t mc_REGEN_disable = 0;
+static int8_t mc_ignition_switch = 0;
+static int8_t mc_Start_switch = 0;
+static int8_t mc_valet_mode = 0;
+static int8_t mc_digital_input8 = 0;
 
 static int16_t bus_voltage = 0;
 static int16_t bus_current = 0;
@@ -207,7 +219,7 @@ void mc_set_inverter_discharge(uint8_t setEnable) {
 }
 
 
-/*
+/**
  * isMCBusCharged
  *
  * @Brief: This function checks if the MC dc bus is charged. It is intended
@@ -223,30 +235,130 @@ uint8_t isMCBusCharged() {
 	return isCharged;
 }
 
+//TODO: write logs to the process functions
 /**
  * PACKET PROCESSING
  */
 
+
+/**
+ * @brief Temperature of Power Module phases A,B,C
+ * @param data can message
+ */
 void mc_process_temp1_can(uint8_t * data) {
+    /*
+     * Byte
+     * 0,1 Module A Temp
+     * 2,3 Module B Temp
+     * 4,5 Module C Temp
+     *
+     * 6,7 Gate Drive Board Temp
+     */
 	mc_igbtA_temp = (data[1] << 8) | data[0];
 	mc_igbtB_temp = (data[3] << 8) | data[2];
 	mc_igbtC_temp = (data[5] << 8) | data[4];
 }
 
+/**
+ * @breif Temperature of Control Board
+ * @param data can message
+ */
 void mc_process_temp2_can(uint8_t * data){
-    //TODO: Process temp2 data
+    /*
+     * Byte
+     * 0,1 Control Board Temp
+     * 2,3 RTD #1 Temp
+     * 4,5 RTD #2 Temp
+     * 6,7 RTD #3 Temp
+     */
+    mc_controlboard_temp = (data[1] << 8) | data[0];
+    mc_RTD_temp_1 = (data[3]<<8) | data[2];
+    mc_RTD_temp_2 = (data[5] << 8) | data[4];
+    mc_RTD_temp_3 = (data[7] << 8) | data[6];
 }
 
+/**
+ * @breif Temperature of Torque Shudder
+ * @param data can message
+ */
 void mc_process_temp3_can(uint8_t * data) {
+    /*
+     *Byte
+     * 0,1 Coolant Temp/ RTD #5 Temp
+     * 2,3 Hot Spot Temp/ RTD Temp
+     * 4,5 Motor Temp
+     * 6,7 Torque Shudder
+     */
+    mc_coolant_temp = (data[1]<<8) | data[0];
+    mc_hot_spot_temp = (data[3] << 8) |data[2];
 	mc_motor_temp = (data[5] << 8) | data[4];
+    mc_torque_shudder = (data[7]<<8)|data[6];
 }
 
+
+/**
+ * @brief Process analog inputs depending on the firmware version
+ * @param data
+ */
 void mc_process_analog_inputs_voltage_can(uint8_t * data){
+    // Firmware version before 1995
+    /*
+     *Byte  Name    Format  Des
+     *0,1   input 1 lowVolt Voltage on input 1
+     *2,3   input 2 lowVolt Voltage on input 2
+     *4,5   input 3 lowVolt Voltage on input 3
+     *6,7   input 4 lowVolt Voltage on input 4
+     */
+
+    // Firmware version 1995 and after
+    /*
+     * Bit#     Format      Desc
+     * 0-9      lowVolt     input1
+     * 10-19    lowVolt     input2
+     * 20-29    lowVolt     input3
+     * 32-41    lowVolt     input4
+     * 42-51    lowVolt     input5
+     * 52-61    lowVolt     input6
+     */
+
+    //Firmware where iM-225 motor type
+    /*
+     * Bit#     Name        format      Desc
+     * 0-15     Oil Temp    Temp        Oil temperature of iM-225
+     * 16-31    Oil pres    Pressure    Oil Pressure of iM-225
+     * 32-41    input 4     lowVolt     Voltage of input 4
+     * 42-51    input 5     lowVolt     Voltage of input 5
+     * 52-61    input 6     lowVolt     Voltage of input 6
+     */
+
     //TODO: MC_FUNCTION analog input voltage
+    //This function requires additional logic and handling before implementation
 }
 
+/**
+ * @breif Process digital
+ * @param data can message
+ */
 void mc_process_digital_input_status_can(uint8_t * data){
-    //TODO: MC_FUNCTION digital input status
+    /*
+     * Byte
+     * 0 Status of Digital input #1 forward switch
+     * 1 Status of Digital input #2 Reverse switch
+     * 2 Status of Digital input #3 Brake switch
+     * 3 Status of Digital input #4 REGEN disable switch
+     * 4 Status of Digital input #5 ignition switch
+     * 5 Status of Digital input #6 Start switch
+     * 6 Status of Digital input #7 Valet Mode
+     * 7 Status of Digital input #8,
+     */
+    mc_forward_switch = data[0];
+    mc_reverse_switch = data[1];
+    mc_brake_switch = data[2];
+    mc_REGEN_disable = data[3];
+    mc_ignition_switch = data[4];
+    mc_Start_switch = data[5];
+    mc_valet_mode = data[6];
+    mc_digital_input8 = data[7];
 }
 
 void mc_process_fault_can(uint8_t * inData) {
@@ -267,27 +379,125 @@ void mc_process_fault_can(uint8_t * inData) {
 }
 
 void mc_process_internal_volt_can(uint8_t * data){
-    //TODO: MC_FUNCTION internal voltage
+    /*
+     * Byte#    Name    Format      Des
+     * 0,1      1.5v    low volt    on of the low voltage references
+     * 2,3      2.5v    low volt    one of the low voltage references
+     * 4,5      5.0v    low volt    one of the low voltage references
+     * 6,7      12.0v   low voltage one of the low voltage references
+     */
+    mc_onehalf_volt_ref = (int16_t)((data[1] << 8)|data[0]);
+    mc_twohalf_volt_ref = (int16_t)((data[3] << 8)|data[2]);
+    mc_five_volt_ref = (int16_t)((data[5] << 8) | data[4]);
+    mc_twelve_volt_ref = (int16_t )((data[7]<<8)|data[6]);
 }
 
 void mc_process_internal_states_can(uint8_t * data){
-    //TODO: MC_FUNCTION internal states
+    /*
+     * byte
+     * 0
+     * 1
+     * 2
+     * 3
+     * 4-[0]
+     * 4-[1]
+     * 4-[5-7]
+     * 5-[0]
+     * 5-[4-7]
+     * 6-[0]
+     * 6-[1]
+     * 6-[6]
+     * 6-[7]
+     * 7-0
+     * 7-1
+     * 7-2
+     * 7-3
+     * 7-4
+     * 7-5
+     * 7-6
+     * 7-7
+     */
+
+    //masking bits
+    uint8_t bit_zero_mask = 0x1;
+    uint8_t bit_one_mask = 0x2;
+    uint8_t bit_two_mask = 0x4;
+    uint8_t bit_three_mask = 0x8;
+    uint8_t bit_four_mask = 0x10;
+    uint8_t bit_five_mask = 0x20;
+    uint8_t bit_six_mask = 0x40;
+    uint8_t bit_seven_mask = 0x80;
+    uint8_t byte4_bit_five_seven = 0xE0;
+    uint8_t byte5_bit_four_seven = 0xF0;
+
+    mc_VSM_state = data[0];
+    mc_PWM_freq = data[1];
+    mc_inverter_state = data[2];
+    mc_relay_state = data[3];
+    mc_inverter_run_mode = data[4] & bit_zero_mask;
+    mc_self_sensing_assist_enable = (data[4] & bit_one_mask) >> 1;
+    mc_inverter_active_discharge_state = (data[4] & byte4_bit_five_seven) >> 5;
+    mc_inverter_command_mode = (data[5] & bit_zero_mask);
+    mc_rolling_counter_value = (data[5] & byte5_bit_four_seven) >> 4;
+    mc_inverter_enable_state = (data[6] & bit_zero_mask);
+    mc_burst_model_mode = (data[6] & bit_one_mask) >> 1;
+    mc_Start_switch = (data[6] & bit_six_mask) >> 6;
+    mc_inverter_enable_lockout = (data[6] & bit_seven_mask) >> 7;
+    mc_direction_command = (data[7] & bit_zero_mask);
+    mc_BMS_active = (data[7] & bit_one_mask) >> 1;
+    mc_BMS_limiting_torque = (data[7] & bit_two_mask) >> 2;
+    mc_limit_max_speed = (data[7] & bit_three_mask) >> 3;
+    mc_limit_hot_spot = (data[7] & bit_four_mask) >> 4;
+    mc_low_speed_limiting = (data[7] & bit_five_mask) >> 5;
+    mc_coolant_temperature_limiting = (data[7] & bit_six_mask) >> 6;
+    mc_limit_stall_burst_model = (data[7] & bit_seven_mask) >> 7;
+
 }
 
 void mc_process_torque_timer_info_can(uint8_t * data){
-    //TODO: MC_FUNCTION torque info
+    /*
+     * Byte     Name            Format  Description
+     * 0,1      Command-Torque  Torque  The command torque
+     * 2,3      Torque Feedback Torque  The estimated motor torque based on motor parameters and feedback
+     * 4,5,6,7  Power on Timer  (Counts x .003)sec  this timer is updated every 3 msec. This timer will roll-over in approximately 5 months. The timer will reset to 0 to show when a reset of the processor has occurred.
+     */
+    mc_torque_command = (int16_t )((data[1] << 8) | data[0]);
+    mc_torque_feedback = (int16_t )((data[3] << 8)| data[4]);
+    mc_power_on_timer = (int32_t)((data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4]);
 }
 
 void mc_process_modulation_index_can(uint8_t * data){
-    //TODO: MC_FUNCTION modulation index
+    /*
+     * Byte     Name        Format      Desc
+     * 0,1      Mod index   per-unit val
+     * 2,3      Flux weak   current
+     * 4,5      id command  current
+     * 6,7      iq command  current
+     */
+    mc_modulation_index = (int16_t )((data[1] << 8) | data[0]);
+    mc_flux_weakening_output = (int16_t )((data[3] << 8) | data[2]);
+    mc_id_command = (int16_t) ((data[5]<<8)|data[4]);
+    mc_iq_command = (int16_t )((data[7]<<8)|data[6]);
 }
 
+
 void mc_process_firmware_info_can(uint8_t * data){
-    //TODO: MC_FUNCTION firmware info
+    /*
+     * Byte Name         Format  Description
+     * 0,1  EEPROM Ver   Na      EEPROM Version
+     * 2,3  Software Ver Na      Software Version
+     * 4,5  Date Code    Na      mmdd
+     * 6,7  Date Code    Na      yyyy
+     */
+    mc_EEPROM_ver = (int16_t) ((data[1] << 8) | data[0]);
+    mc_software_ver = (int16_t)((data[3] << 8) | data[2]);
+    mc_datecode_mmdd = (int16_t)((data[5] << 8) | data[4]);
+    mc_datecode_yyyy = (int16_t)((data[7] << 8) | data[6]);
 }
 
 void mc_process_diagnostic_data_can(uint8_t * data){
-    //TODO: MC_FUNCTION diagnostic data ¯\_(ツ)_/¯
+    //TODO: MC_FUNCTION diagnostic data
+    // Documentation states additional documents are needed
 }
 
 /**
@@ -306,49 +516,63 @@ void mc_process_fast_can(uint8_t * data) {
     logSensor((float) (mc_rpm * 117.97) / 5500, MC_ACUAL_SPEED_REG_LOG);
 }
 
+/**
+ * @brief Process the torque capability
+ * @param data
+ */
 void mc_process_torque_capability_can(uint8_t * data){
-    //TODO: MC_FUNCTION process torque capability
+    /*
+     * Byte
+     * 0,1  Torque Capability
+     * 2,3  NA
+     * 4,5  NA
+     * 6,7  NA
+     */
+    mc_torque_capability = (data[1] << 8) | data[0];
+
 }
+
 
 /**
- * @brief Clears errors in the motor controller
- *
+ * @breif Process Dc bus voltage and output voltage
+ * @param data
  */
-void fixFaults() {
-	uint8_t len = 8;
-	uint8_t data[len];
-	uint8_t dest = MC_PARAM_COMMAND_MSG;
-
-	uint8_t ret = 0;
-
-	data[0] = 20;
-	data[1] = 0;
-	data[2] = 1;
-	data[3] = 0;
-	data[4] = 0;
-	data[5] = 0;
-	data[6] = 0;
-	data[7] = 0;
-
-	ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
-	if (ret != 0) {
-		//can error, log it
-		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-		logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
-	}
-}
-
 void mc_process_volt_can(uint8_t * data) {
+    /*
+     * Byte
+     * 0,1  DC Bus Voltage  Actual measured value of the DC bus voltage.
+     * 2,3  Output Voltage  The calculated value of the output voltage, in peak line-neutral volts.
+     * 4,5  VAB_Vd_Voltage  Measured value of the voltage between Phase A and Phase B (VAB) when the inverter is disabled. Vd voltage when the inverter is enabled
+     * 6,7  VBC_Vq_Voltage  Measured value of the voltage between Phase B and Phase C (VBC) when the inverter is disabled. Vq voltage when the inverter is enabled
+     */
 	bus_voltage = (data[1] << 8) | data[0];
 	mc_output_voltage = (data[3] << 8) | data[2];
 	mc_vd = (data[5] << 8) | data[4];
 	mc_vq = (data[7] << 8) | data[6];
 }
 
+/**
+ * @brief Motor Position information
+ * @param data can message data
+ */
 void mc_process_motor_can(uint8_t * data) {
-	mc_rpm = (data[3] << 8) | data[2];
+    /*
+     * Byte
+     * 0,1 Motor angle
+     * 2,3 Motor Speed
+     * 4,5 Electrical Output Frequency
+     * 6,7 Delta Resolver Filtered
+     */
+    mc_angle = (data[1] << 8) | data[0];
+	mc_speed = (data[3] << 8) | data[2];
+    mc_Electrical_output_freq =(data[5] << 8) | data[4];
+    mc_delta_resolver_filtered = (data[7] << 8) | data[6];
 }
 
+/**
+ * @brief Current Information
+ * @param data can message
+ */
 void mc_process_current_can(uint8_t * data) {
 	mc_currentA = (data[1] << 8) | data[0];
 	mc_currentB = (data[3] << 8) | data[2];
@@ -357,7 +581,7 @@ void mc_process_current_can(uint8_t * data) {
 	logSensor((float) bus_current, MC_I_ACTUAL_LOG);
 }
 
-/**
+/*
  *	Sent whenever a torque request is read by the APPS
  */
 void mc_send_command_msg(uint8_t mode) {
@@ -458,10 +682,13 @@ void mc_send_param_command_message(uint8_t param_address, uint8_t RW, uint8_t * 
 	//}
 }
 
-/**
+/*
  * PARAM COMMAND MESSAGES
  */
 
+/**
+ * @brief Set torque to zero
+ */
 void sendZeroTorque() {
 	mc_set_torque(0);
 }
@@ -484,9 +711,7 @@ void mc_disable_broadcast_msgs() {
 			data);
 }
 
-/*
- *
- *
+/**
  * @Brief: this function updates the heartbeat task to the presence of the
  * motor controller
  */
@@ -497,6 +722,34 @@ void update_heartbeat() {
 		xTaskNotify(task, 0, eNoAction);
         osThreadFlagsSet(task, 0x01);
 	}
+}
+
+/**
+ * @brief Clears errors in the motor controller
+ *
+ */
+void fixFaults() {
+    uint8_t len = 8;
+    uint8_t data[len];
+    uint8_t dest = MC_PARAM_COMMAND_MSG;
+
+    uint8_t ret = 0;
+
+    data[0] = 20;
+    data[1] = 0;
+    data[2] = 1;
+    data[3] = 0;
+    data[4] = 0;
+    data[5] = 0;
+    data[6] = 0;
+    data[7] = 0;
+
+    ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+    if (ret != 0) {
+        //can error, log it
+        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
+        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+    }
 }
 
 void EnableMC() {
