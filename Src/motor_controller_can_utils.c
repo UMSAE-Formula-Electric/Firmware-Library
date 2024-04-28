@@ -329,8 +329,12 @@ void mc_process_analog_inputs_voltage_can(uint8_t * data){
      * 52-61    input 6     lowVolt     Voltage of input 6
      */
 
-    //TODO: MC_FUNCTION analog input voltage
-    //This function requires additional logic and handling before implementation
+    //Assuming oldest case
+    mc_analog_input1 = (data[1] << 8) | data[0];
+    mc_analog_input2 = (data[3] << 8) | data[2];
+    mc_analog_input3 = (data[5] << 8) | data[4];
+    mc_analog_input4 = (data[7] << 8) | data[6];
+
 }
 
 /**
