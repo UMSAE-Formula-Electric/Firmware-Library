@@ -74,6 +74,6 @@ typedef struct {
 /* End Defines */
 
 /* Prototypes */
-uint8_t sendCan(CAN_HandleTypeDef* hcan, uint8_t const * data, int32_t length, uint32_t dest, uint8_t isRTR, uint8_t isExtended);
+uint8_t sendCan(CAN_HandleTypeDef* hcan, uint8_t const * data, uint32_t length, uint32_t dest, uint32_t canRTR, uint8_t isExtended);
 /* End Prototypes */
 #endif /* INC_CAN_UTILS_H_ */
