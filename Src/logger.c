@@ -1,6 +1,5 @@
 #include "logger.h"
 #include "usart.h"
-#include "bt_protocol.h"
 #include <string.h>
 
 //Stores the current state of the logger initialization
