@@ -1,6 +1,6 @@
 #include "logger.h"
-#include "bt_protocol.h"
 #include "usart.h"
+#include "bt_protocol.h"
 #include <string.h>
 
 //Stores the current state of the logger initialization
@@ -25,9 +25,6 @@ bool logInitialize() {
 	if(!LOGGING_INITIALIZED) {
 		//On success, set the bool flag and return true
 		LOGGING_INITIALIZED = true;
-        if(!btInitialize()) {
-            logMessage("Failed to initialize BT", false);
-        }
 		return true;
 	}
 	//Return false on any init failures
@@ -42,29 +39,12 @@ bool logInitialize() {
 bool logTerminate() {
 	//Ensures it has been initialized already, and terminates the SD and BT
 	if(LOGGING_INITIALIZED) {
-		if(!btTerminate()) {
-			return false;
-		}
 		//Reset the bool flag, return true
 		LOGGING_INITIALIZED = false;
 		return true;
 	}
 	//Return false on any term failures
 	return false;
-}
-
-/*
- * logIndicator(bool value, INDICATOR indc)
- *
- * Log a indicator value to be added to the Bluetooth packet
- *
- * value = Bool value of the indicator
- * indc = An indicator that has been defined in the enum typedef in logger.h
- */
-void logIndicator(bool value, INDICATOR indc) {
-	if(LOGGING_INITIALIZED) {
-		btUpdateData((void *)&value, NUM_OF_SENSORS+indc);
-	}
 }
 
 /**
@@ -95,52 +75,6 @@ void logMessage(char *data, bool critical) {
 	if (VCU_loggingReady && LOGGING_INITIALIZED) {
 		nullTerminate(data);
         HAL_USART_Transmit(&husart2, (uint8_t *)data, strlen(data), 10);
-//        while (HAL_USART_GetState(&husart2) == HAL_USART_STATE_BUSY_TX);
-//		int sliceAmount = strlen(data - 1) / 8 + 1;
-//
-//		int letterCounter = 0;
-//		int exit = 0;
-//		char slicedMesg[8];
-//		int i = 0;
-//
-//		//Loop for each slice, breaking it down into chunks of 8
-//		for (int slice = 0; slice < sliceAmount && !exit; slice++) {
-//			//Go through 1 of the chunks
-//			for (i = 0; i < 8 && !exit; i++) {
-//				exit = (data[letterCounter] == '\0');
-//				slicedMesg[i] = data[letterCounter];
-//				letterCounter++;
-//			}
-//			//Send the chunk of the message over CAN
-//			//sendCan(CAN1, slicedMesg, i, CAN_VCU_CAN_ID, CAN_NO_EXT, CAN_NO_EXT);
-//		}
 	}
 }
 
-/*
- * logErrorMessage(char *data, INDICATOR indc)
- *
- * Log a diagnostics message to the SD card
- *
- * data = Char array (String) that contains the message
- * critical = Boolean flag on if the message is critical, bypassing the log buffer
- */
-void logErrorMessage(char *data, INDICATOR indc){
-	if(LOGGING_INITIALIZED) {
-		btUpdateData(data, NUM_OF_SENSORS + indc);
-	}
-}
-
-/*
- * logSensor(float value, SENSOR sens)
- *
- * Log a sensor value to the SD card and Bluetooth packet
- *
- * value = Float value of the sensor
- * sens = A sensor that has been defined in the enum typedef in logger.h
- */
-void logSensor(float value, SENSOR sens) {
-	if(LOGGING_INITIALIZED) {
-        btUpdateData((void *)&value, sens);
-	}
-}

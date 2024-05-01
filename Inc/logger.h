@@ -5,9 +5,7 @@
 
 #include <stdbool.h>
 
-#include "global_board_config.h"
-
-extern bool LOGGING_INITIALIZED;
+extern char SD_ERROR_STATE;
 
 /*	Typedef'd enumerator for sensors
 *		Final value, NUM_OF_SENSORS returns total number of sensors
@@ -99,14 +97,10 @@ extern char BT_ERROR_STATE;
  * 0x09: Not Enough Free Space Available
  **/
 
-extern char SD_ERROR_STATE;
-
 bool logInitialize();
 bool logTerminate();
-void logIndicator(bool value, INDICATOR indc);
 void logMessage(char *data, bool critical);
-void logSensor(float value, SENSOR sens);
-void logErrorMessage(char *data, INDICATOR indc);
+
 void enableVCULogging();
 void nullTerminate(char *str);
 

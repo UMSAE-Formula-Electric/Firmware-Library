@@ -297,8 +297,6 @@ void mc_process_fast_can(uint8_t * data) {
     mc_torque_feedback = (data[3] << 8) | data[2];
     mc_rpm = (data[5] << 8) | data[4];
     bus_voltage = (data[7] << 8) | data[6];
-    logSensor((float) bus_voltage / 10, MC_BUS_VOLTAGE_LOG);
-    logSensor((float) (mc_rpm * 117.97) / 5500, MC_ACUAL_SPEED_REG_LOG);
 }
 
 void mc_process_torque_capability_can(uint8_t * data){
@@ -349,7 +347,6 @@ void mc_process_current_can(uint8_t * data) {
 	mc_currentB = (data[3] << 8) | data[2];
 	mc_currentC = (data[5] << 8) | data[4];
 	bus_current = (data[7] << 8) | data[6];
-	logSensor((float) bus_current, MC_I_ACTUAL_LOG);
 }
 
 /**
