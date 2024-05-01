@@ -722,7 +722,7 @@ void fixFaults() {
     data[6] = 0;
     data[7] = 0;
 
-    ret = sendCan(CAN1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+    ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
     if (ret != 0) {
         //can error, log it
         log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
