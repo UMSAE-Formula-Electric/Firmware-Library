@@ -18,10 +18,10 @@ typedef enum {
 	HEARTBEAT_NONE = 0, //have not received anything from ACB/MC yet
 	HEARTBEAT_LOST, //similar to none except that we previously had acb/mc signal and lost it
 	HEARTBEAT_PRESENT
-} heatbeat_state_t;
+} HeartbeatState_t;
 
 typedef enum {
 	HEARTBEAT_REQUEST_NOTIFY = 0,
 	HEARTBEAT_RESPONSE_NOTIFY
-} heatbeat_notif_vals_t;
+} HeartbeatNotify_t;
 #endif /* INC_HEARTBEAT_UTILS_H_ */
