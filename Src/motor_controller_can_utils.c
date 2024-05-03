@@ -46,8 +46,6 @@ static int16_t mc_vq = 0;
 // state machine for motor controller
 static mc_state_t motor_controller_state = MC_DISABLED;
 
-static void update_heartbeat();
-
 static void enableRegReading(uint8_t reg, uint8_t freq);
 
 //only VCU keeps track of mc state machine
