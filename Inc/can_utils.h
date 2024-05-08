@@ -9,6 +9,7 @@
 #define INC_CAN_UTILS_H_
 
 /* Defines */
+#include "main.h"
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 #include "cmsis_os2.h"
@@ -70,6 +71,21 @@ typedef struct {
     CAN_TxHeaderTypeDef txPacketHeader;
     uint8_t txPacketData[8];
 } CAN_TxPacketTypeDef;
+
+enum STARTUP_STATUS_NOTIFY_MSG{
+    CAN_ACB_TSA_ACK = 0,
+    CAN_ACB_TSA_NACK,
+    CAN_ACB_RTD_ACK,
+    CAN_ACB_RTD_NACK,
+    CAN_GO_IDLE_REQ,  //Request to go idle
+    CAN_NO_SAFETY_LOOP_SET,  //Message to VCU to indicate that the safety loop is open at the VCU. Used when the car is idle
+    CAN_NO_SAFETY_LOOP_CLEAR,//Message to VCU to indicate that the safety loop is closed at the VCU. Used when the car is idle
+    CAN_AIR_WELD_SET,
+    CAN_HEARTBEAT_REQUEST,
+    CAN_HEARTBEAT_RESPONSE,
+    CAN_BATTERY_VOLTAGE_REQUEST,
+    CAN_BATTERY_VOLTAGE_RESPONSE
+};
 
 /* End Defines */
 
