@@ -17,43 +17,115 @@
 #define TR_MAX_RPM 6000
 
 
-static int8_t mc_direction = 1;
-static int8_t mc_enable_inverter = 0;
-static int8_t mc_enable_discharge = 0;
-static int16_t mc_torque_limit = 0;
-static int16_t mc_torque = 0;
-static int16_t mc_speed = 0;
+//Global variables
+int16_t bus_voltage = 0;
+int16_t bus_current = 0;
+int16_t mc_currentA = 0;
+int16_t mc_currentB = 0;
+int16_t mc_currentC = 0;
 
-//temp 1
-static int16_t mc_igbtA_temp = 0;
-static int16_t mc_igbtB_temp = 0;
-static int16_t mc_igbtC_temp = 0;
+//Temp 1
+//Insulated, Gate, Bipolar, Transistor
+int16_t mc_igbtA_temp = 0;
+int16_t mc_igbtB_temp = 0;
+int16_t mc_igbtC_temp = 0;
 
-//temp 3
-static int16_t mc_motor_temp = 0;
+//Temp 2
+// Resistance Temprature Detector
+int16_t mc_controlboard_temp = 0;
+int16_t mc_RTD_temp_1 = 0;
+int16_t mc_RTD_temp_2 = 0;
+int16_t mc_RTD_temp_3 = 0;
 
+//Temp 3
+int16_t mc_coolant_temp = 0;
+int16_t mc_hot_spot_temp = 0;
+int16_t mc_motor_temp = 0;
+int16_t mc_torque_shudder = 0;
 
-//Digital inputs
-static int8_t mc_forward_switch = 0;
-static int8_t mc_reverse_switch = 0;
-static int8_t mc_brake_switch = 0;
-static int8_t mc_REGEN_disable = 0;
-static int8_t mc_ignition_switch = 0;
-static int8_t mc_Start_switch = 0;
-static int8_t mc_valet_mode = 0;
-static int8_t mc_digital_input8 = 0;
+//Digital input status
+int8_t mc_forward_switch = 0;
+int8_t mc_reverse_switch = 0;
+int8_t mc_brake_switch = 0;
+int8_t mc_REGEN_disable = 0;
+int8_t mc_ignition_switch = 0;
+int8_t mc_Start_switch = 0;
+int8_t mc_valet_mode = 0;
+int8_t mc_digital_input8 = 0;
 
-static int16_t bus_voltage = 0;
-static int16_t bus_current = 0;
-static int16_t mc_currentA = 0;
-static int16_t mc_currentB = 0;
-static int16_t mc_currentC = 0;
-static int16_t mc_rpm = 0;
-static int16_t mc_output_voltage = 0;
-static int16_t mc_torque_command = 0;
-static int16_t mc_torque_feedback = 0;
-static int16_t mc_vd = 0;
-static int16_t mc_vq = 0;
+//internal voltages
+int16_t mc_onehalf_volt_ref = 0;
+int16_t mc_twohalf_volt_ref = 0;
+int16_t mc_five_volt_ref = 0;
+int16_t mc_twelve_volt_ref = 0;
+
+//internal states
+int8_t mc_VSM_state = 0;
+int8_t mc_PWM_freq = 0;
+int8_t mc_inverter_state = 0;
+int8_t mc_relay_state = 0;
+int8_t mc_inverter_run_mode = 0;
+int8_t mc_self_sensing_assist_enable = 0;
+int8_t mc_inverter_active_discharge_state = 0;
+int8_t mc_inverter_command_mode = 0;
+int8_t mc_rolling_counter_value = 0;
+int8_t mc_inverter_enable_state = 0;
+int8_t mc_burst_model_mode = 0;
+int8_t mc_start_mode_active = 0;
+int8_t mc_inverter_enable_lockout = 0;
+int8_t mc_direction_command = 0;
+int8_t mc_BMS_active = 0;
+int8_t mc_BMS_limiting_torque = 0;
+int8_t mc_limit_max_speed = 0;
+int8_t mc_limit_hot_spot = 0;
+int8_t mc_low_speed_limiting = 0;
+int8_t mc_coolant_temperature_limiting = 0;
+int8_t mc_limit_stall_burst_model = 0;
+
+//torque timer info
+int16_t mc_torque_command = 0;
+int16_t mc_torque_feedback = 0;
+int32_t mc_power_on_timer = 0;
+
+//modulation index & flux
+int16_t mc_modulation_index = 0;
+int16_t mc_flux_weakening_output = 0;
+int16_t mc_id_command = 0;
+int16_t mc_iq_command = 0;
+
+//Motor position info
+int16_t mc_angle = 0;
+int16_t mc_rpm = 0;
+int16_t mc_Electrical_output_freq = 0;
+int16_t mc_delta_resolver_filtered = 0;
+
+int16_t mc_output_voltage = 0;
+
+int16_t mc_vd = 0;
+int16_t mc_vq = 0;
+
+int8_t  mc_direction = 0;
+int8_t  mc_enable_inverter = 0;
+int8_t  mc_enable_discharge = 0;
+int16_t mc_torque_limit = 0;
+int16_t mc_torque = 0;
+int16_t mc_speed = 0;
+
+// analog inputs voltages
+int16_t mc_analog_input1 = 0;
+int16_t mc_analog_input2 = 0;
+int16_t mc_analog_input3 = 0;
+int16_t mc_analog_input4 = 0;
+
+//Firmware information
+int16_t mc_EEPROM_ver = 0;
+int16_t mc_software_ver = 0;
+int16_t mc_datecode_mmdd = 0;
+int16_t mc_datecode_yyyy = 0;
+
+//torque capability
+int16_t mc_torque_capability = 0;
+
 
 // state machine for motor controller
 static mc_state_t motor_controller_state = MC_DISABLED;
@@ -94,68 +166,270 @@ void UpdateMCState(int16_t mc_trottle_val) {
  */
 
 float mc_getAverageIGBTTemp() {
-	return (mc_igbtA_temp + mc_igbtB_temp + mc_igbtC_temp) / 30;
+	return (float)(mc_igbtA_temp + mc_igbtB_temp + mc_igbtC_temp) / 30;
 }
 
 float mc_getIGBTATemp() {
-	return mc_igbtA_temp / 10;
+	return (float)mc_igbtA_temp / 10;
 }
 
 float mc_getIGBTBTemp() {
-	return mc_igbtA_temp / 10;
+	return (float)mc_igbtB_temp / 10;
 }
 
 float mc_getIGBTCTemp() {
-	return mc_igbtA_temp / 10;
+	return (float)mc_igbtC_temp / 10;
+}
+
+float mc_get_mc_control_board_temp(){
+    return (float)mc_controlboard_temp * 10;
+}
+
+float mc_get_RTD_temp_1(){
+    return (float)mc_RTD_temp_1 / 10;
+}
+
+float mc_get_RTD_temp_2(){
+    return (float)mc_RTD_temp_2 / 10;
+}
+
+float mc_get_RTD_temp_3(){
+    return (float)mc_RTD_temp_3 / 10;
+}
+
+float mc_get_coolant_temp(){
+    return (float)mc_coolant_temp / 10;
+}
+
+float mc_get_hot_spot_temp(){
+    return (float)mc_hot_spot_temp /10;
 }
 
 float mc_getMotorTemp() {
-	return mc_motor_temp / 10;
+	return (float)mc_motor_temp / 10;
 }
 
-float mc_getBusVoltage() {
-	return bus_voltage / 10;
+float mc_get_torque_shudder(){
+    return (float)mc_torque_shudder / 10;
+}
+
+int8_t mc_get_forward_switch(){
+    return mc_forward_switch;
+}
+
+int8_t mc_get_reverse_switch(){
+    return mc_reverse_switch;
+}
+
+int8_t mc_get_brake_switch(){
+    return mc_reverse_switch;
+}
+
+int8_t mc_get_REGEN_disable(){
+    return mc_REGEN_disable;
+}
+
+int8_t mc_get_ignition_switch(){
+    return mc_ignition_switch;
+}
+
+int8_t mc_get_start_switch(){
+    return mc_Start_switch;
+}
+
+int8_t mc_get_valet_mode(){
+    return mc_valet_mode;
+}
+
+int8_t mc_digital_input_8(){
+    return mc_digital_input8;
+}
+
+float mc_get_current_A(){
+    return (float)mc_currentA / 10;
+}
+
+float mc_get_current_B(){
+    return (float)mc_currentB / 10;
+}
+
+float mc_get_current_C(){
+    return  (float)mc_currentC / 10;
 }
 
 float mc_getBusCurrent() {
-	return bus_current * 10;
+	return (float)bus_current * 10;
+}
+
+float mc_getBusVoltage() {
+    return (float)bus_voltage / 10;
+}
+
+float mc_getOutputVoltage(){
+    return (float) mc_output_voltage / 10;
+}
+
+float mc_get_vd() {
+    return mc_vd / 10;
+}
+
+float mc_get_vq() {
+    return mc_vq / 10;
+}
+
+float mc_get_modulation_index(){
+    return (float)mc_modulation_index / 100;
+}
+
+float mc_get_flux_weakening_point(){
+    return (float)mc_id_command / 10;
+}
+
+float mc_get_id_command(){
+    return (float) mc_id_command / 10;
+}
+
+float mc_get_iq_command(){
+    return (float) mc_iq_command / 10;
+}
+
+float mc_get_onehalf_volt_ref(){
+    return (float) mc_onehalf_volt_ref / 100;
+}
+
+float mc_get_twohalf_volt_ref(){
+    return (float) mc_twohalf_volt_ref / 100;
+}
+
+float mc_get_five_volt_ref(){
+    return (float) mc_five_volt_ref / 100;
+}
+
+float mc_get_twelve_volt_ref(){
+    return (float) mc_twelve_volt_ref / 100;
+}
+
+int mc_get_VSM_state(){
+    return mc_VSM_state;
+}
+
+int mc_get_PWM_freq(){
+    return mc_PWM_freq;
+}
+
+int mc_get_inverter_state(){
+    return mc_inverter_enable_state;
+}
+
+int mc_get_relay_state(){
+    return mc_relay_state;
+}
+
+int mc_get_inverter_run_mode(){
+    return mc_inverter_run_mode;
+}
+
+int mc_get_self_sensing_assist_enable(){
+    return mc_self_sensing_assist_enable;
+}
+
+int mc_get_inverter_active_discharge_state(){
+    return mc_inverter_active_discharge_state;
+}
+
+int mc_get_inverter_command_mode(){
+    return mc_inverter_command_mode;
+}
+
+int mc_get_rolling_counter_value(){
+    return mc_rolling_counter_value;
+}
+
+int mc_get_inverter_enable_state(){
+    return mc_inverter_enable_state;
+}
+
+int mc_get_burst_model_mode(){
+    return mc_burst_model_mode;
+}
+
+int mc_get_start_mode_active(){
+    return mc_start_mode_active;
+}
+
+int mc_get_inverter_enable_lockout(){
+    return mc_inverter_enable_lockout;
+}
+
+int mc_get_direction_command(){
+    return mc_direction_command;
+}
+
+int mc_get_BMS_Active(){
+    return mc_BMS_limiting_torque;
+}
+
+int mc_get_BMS_limiting_torque(){
+    return mc_BMS_limiting_torque;
+}
+
+int mc_get_limit_max_speed(){
+    return mc_limit_max_speed;
+}
+
+int mc_get_limit_max_hot_spot(){
+    return mc_limit_hot_spot;
+}
+
+int mc_get_low_speed_limit(){
+    return mc_low_speed_limiting;
+}
+
+int mc_get_coolant_temperature_limit(){
+    return mc_coolant_temperature_limiting;
+}
+
+int mc_get_limit_stall_burst_model(){
+    return mc_limit_stall_burst_model;
 }
 
 float mc_getIGBTACurrent() {
-	return mc_currentA / 10;
+	return (float)mc_currentA / 10;
 }
 
 float mc_getIGBTBCurrent() {
-	return mc_currentB / 10;
+	return (float)mc_currentB / 10;
 }
 
 float mc_getIGBTCCurrent() {
-	return mc_currentC / 10;
+	return (float)mc_currentC / 10;
 }
 
-int mc_getRPM() {
+float mc_get_motor_angle(){
+    return (float)mc_angle / 10;
+}
+
+int mc_get_motor_RPM() {
 	return mc_rpm;
 }
 
-float mc_getOutputVoltage() {
-	return mc_output_voltage / 10;
+float mc_get_electrical_output_freq(){
+    return (float)mc_Electrical_output_freq / 10;
+}
+
+float mc_get_delta_resolver_filtered(){
+    return (float) mc_delta_resolver_filtered / 10;
 }
 
 float mc_getCommandedTorque() {
-	return mc_torque_command / 10;
+	return (float)mc_torque_command / 10;
 }
 
 float mc_getFeedbackTorque() {
 	return mc_torque_feedback / 10;
 }
 
-float mc_get_vd() {
-	return mc_vd / 10;
-}
 
-float mc_get_vq() {
-	return mc_vq / 10;
-}
 
 /**
  * SETTERS
@@ -268,9 +542,9 @@ void mc_process_temp2_can(uint8_t * data){
      * 6,7 RTD #3 Temp
      */
     mc_controlboard_temp = (data[1] << 8) | data[0];
-    mc_RTD_temp_1 = (data[3]<<8) | data[2];
-    mc_RTD_temp_2 = (data[5] << 8) | data[4];
-    mc_RTD_temp_3 = (data[7] << 8) | data[6];
+    mc_RTD_temp_1 = (int16_t )(data[3]<<8) | data[2];
+    mc_RTD_temp_2 = (int16_t )(data[5] << 8) | data[4];
+    mc_RTD_temp_3 = (int16_t )(data[7] << 8) | data[6];
 }
 
 /**
@@ -351,7 +625,7 @@ void mc_process_digital_input_status_can(uint8_t * data){
      * 6 Status of Digital input #7 Valet Mode
      * 7 Status of Digital input #8,
      */
-    mc_forward_switch = data[0];
+    mc_forward_switch = (int8_t )data[0];
     mc_reverse_switch = data[1];
     mc_brake_switch = data[2];
     mc_REGEN_disable = data[3];
@@ -430,27 +704,27 @@ void mc_process_internal_states_can(uint8_t * data){
     uint8_t byte4_bit_five_seven = 0xE0;
     uint8_t byte5_bit_four_seven = 0xF0;
 
-    mc_VSM_state = data[0];
-    mc_PWM_freq = data[1];
-    mc_inverter_state = data[2];
-    mc_relay_state = data[3];
-    mc_inverter_run_mode = data[4] & bit_zero_mask;
-    mc_self_sensing_assist_enable = (data[4] & bit_one_mask) >> 1;
-    mc_inverter_active_discharge_state = (data[4] & byte4_bit_five_seven) >> 5;
-    mc_inverter_command_mode = (data[5] & bit_zero_mask);
-    mc_rolling_counter_value = (data[5] & byte5_bit_four_seven) >> 4;
-    mc_inverter_enable_state = (data[6] & bit_zero_mask);
-    mc_burst_model_mode = (data[6] & bit_one_mask) >> 1;
-    mc_Start_switch = (data[6] & bit_six_mask) >> 6;
-    mc_inverter_enable_lockout = (data[6] & bit_seven_mask) >> 7;
-    mc_direction_command = (data[7] & bit_zero_mask);
-    mc_BMS_active = (data[7] & bit_one_mask) >> 1;
-    mc_BMS_limiting_torque = (data[7] & bit_two_mask) >> 2;
-    mc_limit_max_speed = (data[7] & bit_three_mask) >> 3;
-    mc_limit_hot_spot = (data[7] & bit_four_mask) >> 4;
-    mc_low_speed_limiting = (data[7] & bit_five_mask) >> 5;
-    mc_coolant_temperature_limiting = (data[7] & bit_six_mask) >> 6;
-    mc_limit_stall_burst_model = (data[7] & bit_seven_mask) >> 7;
+    mc_VSM_state = (int8_t )data[0];
+    mc_PWM_freq = (int8_t )data[1];
+    mc_inverter_state = (int8_t )data[2];
+    mc_relay_state = (int8_t )data[3];
+    mc_inverter_run_mode = (int8_t )(data[4] & bit_zero_mask);
+    mc_self_sensing_assist_enable = (int8_t )((data[4] & bit_one_mask) >> 1);
+    mc_inverter_active_discharge_state = (int8_t )((data[4] & byte4_bit_five_seven) >> 5);
+    mc_inverter_command_mode = (int8_t )(data[5] & bit_zero_mask);
+    mc_rolling_counter_value = (int8_t )((data[5] & byte5_bit_four_seven) >> 4);
+    mc_inverter_enable_state = (int8_t )(data[6] & bit_zero_mask);
+    mc_burst_model_mode = (int8_t )((data[6] & bit_one_mask) >> 1);
+    mc_Start_switch = (int8_t )((data[6] & bit_six_mask) >> 6);
+    mc_inverter_enable_lockout = (int8_t )((data[6] & bit_seven_mask) >> 7);
+    mc_direction_command = (int8_t )(data[7] & bit_zero_mask);
+    mc_BMS_active = (int8_t )((data[7] & bit_one_mask) >> 1);
+    mc_BMS_limiting_torque = (int8_t )((data[7] & bit_two_mask) >> 2);
+    mc_limit_max_speed = (int8_t )((data[7] & bit_three_mask) >> 3);
+    mc_limit_hot_spot = (int8_t )((data[7] & bit_four_mask) >> 4);
+    mc_low_speed_limiting = (int8_t )((data[7] & bit_five_mask) >> 5);
+    mc_coolant_temperature_limiting = (int8_t )((data[7] & bit_six_mask) >> 6);
+    mc_limit_stall_burst_model = (int8_t )((data[7] & bit_seven_mask) >> 7);
 
 }
 
@@ -505,10 +779,11 @@ void mc_process_diagnostic_data_can(uint8_t * data){
  * @param data: data from the can bus
  */
 void mc_process_fast_can(uint8_t * data) {
-    mc_torque_command = (data[1] << 8) | data[0];
-    mc_torque_feedback = (data[3] << 8) | data[2];
-    mc_rpm = (data[5] << 8) | data[4];
-    bus_voltage = (data[7] << 8) | data[6];
+
+    mc_torque_command = (int16_t )((data[1] << 8) | data[0]);
+    mc_torque_feedback = (int16_t )((data[3] << 8) | data[2]);
+    mc_rpm = (int16_t )((data[5] << 8) | data[4]);
+    bus_voltage = (int16_t )((data[7] << 8) | data[6]);
 }
 
 /**
@@ -523,7 +798,7 @@ void mc_process_torque_capability_can(uint8_t * data){
      * 4,5  NA
      * 6,7  NA
      */
-    mc_torque_capability = (data[1] << 8) | data[0];
+    mc_torque_capability = (int16_t )((data[1] << 8) | data[0]);
 
 }
 
@@ -540,10 +815,10 @@ void mc_process_volt_can(uint8_t * data) {
      * 4,5  VAB_Vd_Voltage  Measured value of the voltage between Phase A and Phase B (VAB) when the inverter is disabled. Vd voltage when the inverter is enabled
      * 6,7  VBC_Vq_Voltage  Measured value of the voltage between Phase B and Phase C (VBC) when the inverter is disabled. Vq voltage when the inverter is enabled
      */
-	bus_voltage = (data[1] << 8) | data[0];
-	mc_output_voltage = (data[3] << 8) | data[2];
-	mc_vd = (data[5] << 8) | data[4];
-	mc_vq = (data[7] << 8) | data[6];
+	bus_voltage = (int16_t )((data[1] << 8) | data[0]);
+	mc_output_voltage = (int16_t )((data[3] << 8) | data[2]);
+	mc_vd = (int16_t )((data[5] << 8) | data[4]);
+	mc_vq = (int16_t )((data[7] << 8) | data[6]);
 }
 
 /**
@@ -558,10 +833,10 @@ void mc_process_motor_can(uint8_t * data) {
      * 4,5 Electrical Output Frequency
      * 6,7 Delta Resolver Filtered
      */
-    mc_angle = (data[1] << 8) | data[0];
-	mc_speed = (data[3] << 8) | data[2];
-    mc_Electrical_output_freq =(data[5] << 8) | data[4];
-    mc_delta_resolver_filtered = (data[7] << 8) | data[6];
+    mc_angle = (int16_t )((data[1] << 8) | data[0]);
+	mc_speed = (int16_t )((data[3] << 8) | data[2]);
+    mc_Electrical_output_freq =(int16_t )((data[5] << 8) | data[4]);
+    mc_delta_resolver_filtered = (int16_t )((data[7] << 8) | data[6]);
 }
 
 /**
@@ -569,10 +844,10 @@ void mc_process_motor_can(uint8_t * data) {
  * @param data can message
  */
 void mc_process_current_can(uint8_t * data) {
-	mc_currentA = (data[1] << 8) | data[0];
-	mc_currentB = (data[3] << 8) | data[2];
-	mc_currentC = (data[5] << 8) | data[4];
-	bus_current = (data[7] << 8) | data[6];
+	mc_currentA = (int16_t )((data[1] << 8) | data[0]);
+	mc_currentB = (int16_t )((data[3] << 8) | data[2]);
+	mc_currentC = (int16_t )((data[5] << 8) | data[4]);
+	bus_current = (int16_t )((data[7] << 8) | data[6]);
 }
 
 /*
