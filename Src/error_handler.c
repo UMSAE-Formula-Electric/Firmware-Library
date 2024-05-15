@@ -1,7 +1,7 @@
 #include <error_handler.h>
 #include "stdlib.h"
 #include "stdint.h"
-#include "../../Firmware-Library/Inc/logger.h"
+#include "logger.h"
 
 /*
  * SEE HEADER FILE FOR INSTUCTIONS
@@ -23,7 +23,7 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 	case ERROR_HEARTBEAT_DEAD:
 		//set the led state
 		//log to the sd card
-		logMessage("ERROR: Failed To Recieve Heartbeat", false);
+		logMessage("ERROR: Failed To Receive Heartbeat", false);
 		//setLedState(Pretty colours)
 		break;
 	case ERROR_AIR_WELD:
@@ -35,7 +35,7 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 	case ERROR_ACB_SAFETY_LOOP_OPEN:
 		//set the led state
 		//log to the sd card
-		logMessage("ERROR: ACB Saftey Loop Open", false);
+		logMessage("ERROR: ACB Safety Loop Open", false);
 		//setLedState(Sad colours)
 		break;
 	case ERROR_AIR_FAIL_TO_CLOSE:
