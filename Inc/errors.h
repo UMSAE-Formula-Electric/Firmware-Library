@@ -10,6 +10,9 @@
 
 #include "stdint.h"
 #include "stdbool.h"
+#include <stdint.h>
+#include "stm32f4xx_hal.h"
+#include "cmsis_os2.h"
 
 typedef enum LogLevel {
 	LOG_Error = 0,
@@ -17,6 +20,7 @@ typedef enum LogLevel {
 	LOG_Info = 2
 } LogLevel;
 
+/*
 typedef enum DataType {
 	FLOAT = 0,
 	INT32 = 1,
@@ -25,8 +29,24 @@ typedef enum DataType {
 	BOOL = 8,
 	NONE = 16,
 } DataType;
+*/
 
-uint8_t datatype_to_size(const enum DataType dt);
+typedef enum {
+	BOOL,
+	CHAR,
+	INT8,
+	UINT8,
+	INT16,
+	UINT16,
+	INT32,
+	UINT32,
+	STRING4,
+	NONE = 255,
+} DataType;
+
+//uint8_t datatype_to_size(const enum DataType dt);
+
+uint8_t DataTypeToSize(DataType type);
 
 // All these tables must fit inside a CAN message using only 1 Byte
 // So there can only be 256 of them from 0 - 255
@@ -54,8 +74,6 @@ typedef enum InfoTable {
 	INFO_AMOUNT
 } INFO_TABLE;
 
-
-
 // TO REMOVE
 //
 //// Logging functions
@@ -64,12 +82,18 @@ typedef enum InfoTable {
 //bool log_can_msg(void *can_data);
 //#endif
 
+extern osMessageQueueId_t errorLogQueueHandle;
+
 // To be implemented by each board
 void start_log_task();
 
 // Logging functions
-bool log_error(ERR_TABLE error_type, DataType data_type, uint8_t* data);
-bool log_warning(WARN_TABLE warning_type, DataType data_type, uint8_t* data);
-bool log_info(INFO_TABLE info_type, DataType data_type, uint8_t* data);
+//bool log_error(ERR_TABLE error_type, DataType data_type, uint8_t* data);
+//bool log_warning(WARN_TABLE warning_type, DataType data_type, uint8_t* data);
+//bool log_info(INFO_TABLE info_type, DataType data_type, uint8_t* data);
+
+_Bool LogError(ERR_TABLE error_type, DataType data_type, uint8_t* data);
+_Bool LogWarn(WARN_TABLE error_type, DataType data_type, uint8_t* data);
+_Bool LogInfo(INFO_TABLE error_type, DataType data_type, uint8_t* data);
 
 #endif /* INC_ERRORS_H_ */
