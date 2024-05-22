@@ -8,6 +8,7 @@
 #include "errors.h"
 #include "string.h"
 
+#define SET_LOGGING_LEVEL LOG_Debug
 #define UNUSED_BYTE 0xFF
 
 uint8_t dataTypeToSize(LogType type) {
@@ -44,17 +45,21 @@ uint8_t dataTypeToSize(LogType type) {
  * @return True if the message was successfully added to queue, false otherwise
  * */
 _Bool LogMessage(LogLevel logLevel, LogCategory logCategory, LogType logType, uint8_t *data){
-    LogPacket logPacket;
+    _Bool messageAddedToQueue = 0;
 
-    logPacket.level = logLevel;
-    logPacket.category = logCategory;
-    logPacket.type = logType;
-    for (int i = 0; i < dataTypeToSize(logType); i++) {
-        logPacket.data[i] = data[i];
+    if (logLevel <= SET_LOGGING_LEVEL){
+        LogPacket logPacket;
+        logPacket.level = logLevel;
+        logPacket.category = logCategory;
+        logPacket.type = logType;
+        for (int i = 0; i < dataTypeToSize(logType); i++) {
+            logPacket.data[i] = data[i];
+        }
+        logPacket.unused = UNUSED_BYTE;
+        messageAddedToQueue = osMessageQueuePut(errorLogQueueHandle, &logPacket, 0, 0) == osOK;
     }
-    logPacket.unused = UNUSED_BYTE;
 
-    return osMessageQueuePut(errorLogQueueHandle, &logPacket, 0, 0) == osOK;
+    return messageAddedToQueue;
 }
 
 /**
