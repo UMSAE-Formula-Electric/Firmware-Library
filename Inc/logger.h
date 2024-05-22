@@ -99,7 +99,7 @@ extern char BT_ERROR_STATE;
 
 bool logInitialize();
 bool logTerminate();
-void logMessage(char *data, bool critical);
+void sendToUsart(char *data, bool critical);
 
 void enableVCULogging();
 void nullTerminate(char *str);

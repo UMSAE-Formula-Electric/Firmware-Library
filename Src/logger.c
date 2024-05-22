@@ -63,14 +63,14 @@ void nullTerminate(char *str) {
 
 
 /*
- * logMessage(char *data, bool critical)
+ * sendToUsart(char *data, bool critical)
  *
  * Log a diagnostics message, by sending it to the ACB in 8 byte chunks
  *
  * data = Char array (String) that contains the message
  * critical = Boolean flag on if the message is critical, bypassing the log buffer
  */
-void logMessage(char *data, bool critical) {
+void sendToUsart(char *data, bool critical) {
 	if (VCU_loggingReady && LOGGING_INITIALIZED) {
 		nullTerminate(data);
         HAL_USART_Transmit(&husart2, (uint8_t *)data, strlen(data), 10);

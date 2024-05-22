@@ -23,44 +23,44 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 	case ERROR_HEARTBEAT_DEAD:
 		//set the led state
 		//log to the sd card
-		logMessage("ERROR: Failed To Receive Heartbeat", false);
+        sendToUsart("ERROR: Failed To Receive Heartbeat", false);
 		//setLedState(Pretty colours)
 		break;
 	case ERROR_AIR_WELD:
 		//set the led state
 		//log to the sd card
-		logMessage("ERROR: AIR WELDED CLOSED!!!", false);
+        sendToUsart("ERROR: AIR WELDED CLOSED!!!", false);
 		//setLedState(Sad colours)
 		break;
 	case ERROR_ACB_SAFETY_LOOP_OPEN:
 		//set the led state
 		//log to the sd card
-		logMessage("ERROR: ACB Safety Loop Open", false);
+        sendToUsart("ERROR: ACB Safety Loop Open", false);
 		//setLedState(Sad colours)
 		break;
 	case ERROR_AIR_FAIL_TO_CLOSE:
-		logMessage("ERROR: Failed to close AIRS", false);
+        sendToUsart("ERROR: Failed to close AIRS", false);
 		//setLedState(Sad colours)
 		break;
 	case ERROR_PRECHAGE_FAIL:
-		logMessage("ERROR: Precharge failed", false);
+        sendToUsart("ERROR: Precharge failed", false);
 		//setLedState(Sad colours)
 		break;
 	case IWDG_ERROR:
 		//set the led state
 		//log to sd card
-		logMessage("ERROR: Init IWDG", false);
+        sendToUsart("ERROR: Init IWDG", false);
 		break;
 	case BAD_PEDAL_STRUCT:
 		//in case a bad pointer is found in a pedal state struct
 
-		logMessage("ERROR: Bad Pedal Struct", false);
+        sendToUsart("ERROR: Bad Pedal Struct", false);
 		break;
 	case ERROR_CAN_ONE_TX_FAIL:
 		//set the led state
 		//log to the sd card
 		if(can1_fail_count < ERR_MAX_CAN_FAIL){
-			logMessage("ERROR: CAN 1 TX Fail", false);
+            sendToUsart("ERROR: CAN 1 TX Fail", false);
 			can1_fail_count++;
 		}
 		break;
@@ -68,7 +68,7 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 		//set the led state
 		//log to the sd card
 		if(can2_fail_count < ERR_MAX_CAN_FAIL){
-			logMessage("ERROR: CAN 2 TX Fail", false);
+            sendToUsart("ERROR: CAN 2 TX Fail", false);
 			can2_fail_count++;
 		}
 		break;
@@ -76,7 +76,7 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 		//set the led state
 		//log to the sd card
 		if(mc_rx_fail_count < ERR_MAX_CAN_FAIL){
-			logMessage("ERROR: MC CAN RX Fail", false);
+            sendToUsart("ERROR: MC CAN RX Fail", false);
 			mc_rx_fail_count++;
 		}
 		break;
@@ -84,7 +84,7 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 		//set the led state
 		//log to the sd card
 		if(q_full_fail_count < ERR_MAX_CAN_FAIL){
-			logMessage("ERROR: RTOS Queue Full", false);
+            sendToUsart("ERROR: RTOS Queue Full", false);
 			q_full_fail_count++;
 		}
 		break;
@@ -92,12 +92,12 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 			//set the led state
 			//log to the sd card
 			if(q_empty_fail_count < ERR_MAX_CAN_FAIL){
-				logMessage("ERROR: RTOS Queue Empty", false);
+                sendToUsart("ERROR: RTOS Queue Empty", false);
 				q_empty_fail_count++;
 			}
 			break;
 	default:
-		logMessage("Unknown Error", false);
+        sendToUsart("Unknown Error", false);
 		//setLedState(Other Pretty colours)
 	}
 }

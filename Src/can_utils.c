@@ -30,14 +30,14 @@ uint8_t addMsgToCanTxQueue(CAN_TxPacketTypeDef *TxPacket) {
     uint8_t sendSuccess = 0x0;
 
     if (osMessageQueuePut(canTxPacketQueueHandle, TxPacket, 0, 0) == osOK) {
-        logMessage("Added message to the CAN Tx Queue.\r\n", false);
+        sendToUsart("Added message to the CAN Tx Queue.\r\n", false);
         return sendSuccess;
     }
 
     uint32_t currQueueSize = osMessageQueueGetCount(canTxPacketQueueHandle);
     uint32_t maxQueueCapacity = osMessageQueueGetCapacity(canTxPacketQueueHandle);
     if (currQueueSize == maxQueueCapacity) {  /* Queue is full */
-        logMessage("Error adding message to transmit to the CAN Tx Queue because the queue is full.\r\n", false);
+        sendToUsart("Error adding message to transmit to the CAN Tx Queue because the queue is full.\r\n", false);
     }
 
     sendSuccess = 0x1;

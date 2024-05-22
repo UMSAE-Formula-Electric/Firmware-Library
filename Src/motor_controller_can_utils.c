@@ -147,7 +147,7 @@ void UpdateMCState(int16_t mc_trottle_val) {
 			//neg means go
 			EnableMC();
 			motor_controller_state = MC_ENABLED;
-			logMessage("MC: Enable MC\n", false);
+            sendToUsart("MC: Enable MC\n", false);
 		}
 		break;
 	case MC_ENABLED:
@@ -155,7 +155,7 @@ void UpdateMCState(int16_t mc_trottle_val) {
 			//soft disable MC to coast
 			DisableMC();
 			motor_controller_state = MC_DISABLED;
-			logMessage("MC: Disable MC\n", false);
+            sendToUsart("MC: Disable MC\n", false);
 		}
 	}
 }
@@ -888,7 +888,7 @@ void mc_send_command_msg(uint8_t mode) {
 	if (ret != 0) {
 		//can error, log it
 		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-		logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+        sendToUsart("MC: Failed to send MC command CAN packet\n", false); //should be critical??
 	}
 }
 
@@ -912,7 +912,7 @@ void sendTorque(int16_t torque) {
     if (ret != 0) {
         //can error, log it
         log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+        sendToUsart("MC: Failed to send MC command CAN packet\n", false); //should be critical??
     }
 }
 
@@ -944,7 +944,7 @@ void mc_send_param_command_message(uint8_t param_address, uint8_t RW, uint8_t * 
 		//can error, log it
 
 		//log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-		//logMessage("MC: Failed to send parameter MC CAN packet\n", false);
+		//sendToUsart("MC: Failed to send parameter MC CAN packet\n", false);
 	//}
 }
 
@@ -1001,7 +1001,7 @@ void fixFaults() {
     if (ret != 0) {
         //can error, log it
         log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+        sendToUsart("MC: Failed to send MC command CAN packet\n", false); //should be critical??
     }
 }
 
