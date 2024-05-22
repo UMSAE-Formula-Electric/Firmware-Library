@@ -38,6 +38,9 @@
 #define CAN_AMS_CAN_ID          0x70
 #define CAN_VCU_LOG_ID			0x71 //ID for sending VCU data to ACB
 
+/* Logging */
+#define CAN_VCU_TO_SCU_LOG_ID 0x72
+
 /* HeartBeats */
 #define CAN_ACU_TO_VCU_ID 0x200
 #define CAN_ACU_TO_SCU_ID 0x201

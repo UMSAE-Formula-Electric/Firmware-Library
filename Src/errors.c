@@ -8,8 +8,9 @@
 #include "errors.h"
 #include "string.h"
 
+#define UNUSED_BYTE 0xFF
 
-uint8_t DataTypeToSize(DataType type) {
+uint8_t dataTypeToSize(LogType type) {
 	switch(type) {
 		case BOOL:
 		case CHAR:
@@ -28,71 +29,58 @@ uint8_t DataTypeToSize(DataType type) {
 	}
 }
 
-/*
-uint8_t datatype_to_size(const enum DataType dt) {
-	uint8_t size = 0;
+/**
+ * @brief Adds a message to the error log queue
+ * This log queue implementation depends on the control unit.
+ * VCU/ACU: The log queue is sent to the SCU via CAN
+ * SCU: The log is sent directly to the SD Card/ Wireless Comms
+ *
+ * NOTE: NEVER USE WITHIN THE CAN TX/RX FREERTOS TASKS (CAUSES AN INFINITE LOOP)
+ * @param logLevel The level of the log message
+ * @param logCategory The category of the log message
+ * @param logType The type of the log message
+ * @param data The data to log
+ *
+ * @return True if the message was successfully added to queue, false otherwise
+ * */
+_Bool LogMessage(LogLevel logLevel, LogCategory logCategory, LogType logType, uint8_t *data){
+    LogPacket logPacket;
 
-	switch (dt) {
-	case FLOAT:
-	case INT32:
-	case UINT32:
-		size = 4;
-		break;
-	case UINT8:
-	case BOOL:
-		size = 1;
-		break;
-	case NONE:
-		size = 0;
-		break;
-	}
+    logPacket.level = logLevel;
+    logPacket.category = logCategory;
+    logPacket.type = logType;
+    for (int i = 0; i < dataTypeToSize(logType); i++) {
+        logPacket.data[i] = data[i];
+    }
+    logPacket.unused = UNUSED_BYTE;
 
-	return size;
-}
-*/
-
-// Initializes the queues
-bool log_init() {
-
-
-
-
-	return true;
+    return osMessageQueuePut(errorLogQueueHandle, &logPacket, 0, 0) == osOK;
 }
 
-//bool log_error(ERR_TABLE error_type, DataType data_type, uint8_t* data);
-//bool log_warning(WARN_TABLE warning_type, DataType data_type, uint8_t* data);
-//bool log_info(INFO_TABLE info_type, DataType data_type, uint8_t* data);
-
-_Bool LogGenericMessage(uint8_t *data) {
-	return osMessageQueuePut(errorLogQueueHandle, &data, 0, 0) == osOK;
+/**
+ * @brief Logs an error message, check LogMessage() brief for more info
+ */
+_Bool LogError(LogCategory logCategory, LogType logType, uint8_t *data){
+    return LogMessage(LOG_Error, logCategory, logType, data);
 }
 
-uint8_t *BuildGenericMessage(LogLevel log_level, uint8_t message_type, DataType data_type, uint8_t *data) {
-	// Send a CAN message
-	//Send the chunk of the message over CAN
-	uint8_t data_length = DataTypeToSize(data_type);
-	uint8_t msg_length = 3 + data_length;
-	uint8_t msg_data[8];
-
-
-	msg_data[0] = (uint8_t)log_level;
-	msg_data[1] = message_type;
-	msg_data[2] = data_type;
-
-	for (int i = 0; i < data_length; i++) {
-		msg_data[i + 3] = data[i];
-	}
-
-	return data;
+/**
+ * @brief Logs a warning message, check LogMessage() brief for more info
+ */
+_Bool LogWarning(LogCategory logCategory, LogType logType, uint8_t *data){
+    return LogMessage(LOG_Warning, logCategory, logType, data);
 }
 
-_Bool LogError(ERR_TABLE error_type, DataType data_type, uint8_t *data) { // TODO: pass important args to LogError
-	uint8_t *message = BuildGenericMessage(LOG_Error, error_type, data_type, data);
-	return LogGenericMessage(message);
+/**
+ * @brief Logs an info message, check LogMessage() brief for more info
+ */
+_Bool LogInfo(LogCategory logCategory, LogType logType, uint8_t *data){
+    return LogMessage(LOG_Info, logCategory, logType, data);
 }
 
-_Bool LogWarn(WARN_TABLE warn_type, DataType data_type, uint8_t *data) { // TODO: pass important args to LogError
-	uint8_t *message = BuildGenericMessage(LOG_Warning, warn_type, data_type, data);
-	return LogGenericMessage(message);
+/**
+ * @brief Logs a debug message, check LogMessage() brief for more info
+ */
+_Bool LogDebug(LogCategory logCategory, LogType logType, uint8_t *data){
+    return LogMessage(LOG_Debug, logCategory, logType, data);
 }
