@@ -96,8 +96,3 @@ _Bool LogWarn(WARN_TABLE warn_type, DataType data_type, uint8_t *data) { // TODO
 	uint8_t *message = BuildGenericMessage(LOG_Warning, warn_type, data_type, data);
 	return LogGenericMessage(message);
 }
-
-_Bool LogInfo(INFO_TABLE info_type, DataType data_type, uint8_t *data) { // TODO: pass important args to LogError
-	uint8_t *message = BuildGenericMessage(LOG_Info, info_type, data_type, data);
-	return LogGenericMessage(message);
-}

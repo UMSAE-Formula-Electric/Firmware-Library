@@ -84,16 +84,4 @@ typedef enum InfoTable {
 
 extern osMessageQueueId_t errorLogQueueHandle;
 
-// To be implemented by each board
-void start_log_task();
-
-// Logging functions
-//bool log_error(ERR_TABLE error_type, DataType data_type, uint8_t* data);
-//bool log_warning(WARN_TABLE warning_type, DataType data_type, uint8_t* data);
-//bool log_info(INFO_TABLE info_type, DataType data_type, uint8_t* data);
-
-_Bool LogError(ERR_TABLE error_type, DataType data_type, uint8_t* data);
-_Bool LogWarn(WARN_TABLE error_type, DataType data_type, uint8_t* data);
-_Bool LogInfo(INFO_TABLE error_type, DataType data_type, uint8_t* data);
-
 #endif /* INC_ERRORS_H_ */
