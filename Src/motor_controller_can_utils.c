@@ -104,7 +104,7 @@ int16_t mc_output_voltage = 0;
 int16_t mc_vd = 0;
 int16_t mc_vq = 0;
 
-int8_t  mc_direction = 0;
+int8_t  mc_direction = 1;
 int8_t  mc_enable_inverter = 0;
 int8_t  mc_enable_discharge = 0;
 int16_t mc_torque_limit = 0;
