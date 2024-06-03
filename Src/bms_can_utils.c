@@ -126,6 +126,22 @@ void init_bms(void){
 
 }
 
+_Bool isBmsCanId(uint32_t canID)
+{
+	return ((canID == CAN_BMS_OVERALL_ID) || (canID == CAN_BMS_DIAGNOSTIC_ID) || (canID == CAN_BMS_VOLTAGE_ID)
+	|| (canID == CAN_BMS_MODULE_TEMPERATURE) || (canID == CAN_BMS_CELL_TEMPERATURE) || (canID == CAN_BMS_CELL_BALANCING_RATE)
+	|| (canID == CAN_BMS_STATE_OF_CHARGE) || (canID == CAN_BMS_CONTACTOR_CONTROL) || (canID == CAN_BMS_ENERGY_PARAM)
+	|| (canID == CAN_BMS_STATS) || (canID == CAN_BMS_EVENTS)
+	|| ((CAN_BMS_BASE_ID + 32) <= canID) && (canID <= (CAN_BMS_BASE_ID + 32 + MAX_NUM_CELL_GROUPS))
+	|| (canID == CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B)
+	|| ((CAN_BMS_BASE_ID + 64) <= canID) && (canID <= (CAN_BMS_BASE_ID + 64 + MAX_NUM_CELL_GROUPS))
+	|| (canID == CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B)
+	|| ((CAN_BMS_BASE_ID + 256) <= canID) && (canID <= (CAN_BMS_BASE_ID + 256 + MAX_NUM_CELL_GROUPS))
+	|| (canID == CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B)
+	|| ((CAN_BMS_BASE_ID + 96) <= canID) && (canID <= (CAN_BMS_BASE_ID + 96 + MAX_NUM_CELL_GROUPS))
+	|| (canID == CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B));
+}
+
 // This function processes Type A and B CAN frames
 void process_typeA_and_typeB_can_packets(CAN_RxPacketTypeDef * packetToProcess) {
 	uint32_t canID = packetToProcess->rxPacketHeader.StdId; // Standard ID from the CAN frame

@@ -48,6 +48,8 @@
 
 void init_bms();		// init the bms data structures and mutex
 
+_Bool isBmsCanId(uint32_t canID);
+
 int bms_getHighTemp();
 int bms_getLowTemp();
 int bms_getAverageTemp();
