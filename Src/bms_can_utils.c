@@ -218,32 +218,22 @@ void process_typeA_and_typeB_can_packets(CAN_RxPacketTypeDef * packetToProcess) 
  * @param Data The data from the CAN message
  */
 void process_bms_overall_packet(uint8_t * Data) {
+	BMS_INPUT_SIGNALS = Data[0];
+	BMS_OUTPUT_SIGNALS = Data[1];
+	BMS_CHARGING_STAGE = Data[3];
+	BMS_LAST_CHARGING_ERROR = Data[6];
 
-	if(xBatTempMutex != NULL){
-		// throw error that we need to init the BMS data structures first
-		if(xSemaphoreTake( xBatTempMutex, ( TickType_t ) 10 ) == pdTRUE ){
+	//Adding MSByte and LSByte to NUM_LIVE_CELLS
+	BMS_NUM_LIVE_CELLS = ((Data[2]) << 8) | Data[7];
 
-			BMS_INPUT_SIGNALS = Data[0];
-			BMS_OUTPUT_SIGNALS = Data[1];
-			BMS_CHARGING_STAGE = Data[3];
-			BMS_LAST_CHARGING_ERROR = Data[6];
+	//Adding MSByte and LSByte to BMS_CHARGING_STAGE_TIME
+	BMS_CHARGING_STAGE_TIME = ((Data[4]) << 8) | Data[5];
 
-			//Adding MSByte and LSByte to NUM_LIVE_CELLS
-			BMS_NUM_LIVE_CELLS = ((Data[2]) << 8) | Data[7];
-
-			//Adding MSByte and LSByte to BMS_CHARGING_STAGE_TIME
-			BMS_CHARGING_STAGE_TIME = ((Data[4]) << 8) | Data[5];
-
-			//Charging error check: 0 means no error
-			if(Data[6] != 0){
-				//Handle error
-				bms_handleChargingError(Data[6]);
-			}
-
-            xSemaphoreGive( xBatTempMutex );		// Give back mutex
-		}// if
-
-	}// if
+	//Charging error check: 0 means no error
+	if(Data[6] != 0){
+		//Handle error
+		bms_handleChargingError(Data[6]);
+	}
 }// process_bms_overall_packet
 
 void process_bms_diagnostic_packet(uint8_t * Data) {
