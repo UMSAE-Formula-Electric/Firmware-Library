@@ -111,7 +111,7 @@ uint8_t cellTemps[CELLS_PER_CAN_FRAME];
 uint8_t cellBalancingRate[CELLS_PER_CAN_FRAME];
 
 // Maximum number of cell groups (total num. of cells / 8)
-uint8_t MAX_NUM_CELL_GROUPS = (NUM_CELLS / CELLS_PER_CAN_FRAME) + 1;
+uint8_t MAX_NUM_CELL_GROUPS = (NUM_EMUS_CELLS / CELLS_PER_CAN_FRAME) + 1;
 //uint8_t MAX_NUM_CELL_GROUPS = 34;
 
 SemaphoreHandle_t xBatTempMutex = NULL;			// Temperature mutex

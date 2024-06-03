@@ -8,10 +8,12 @@
 #include "can.h"
 
 // The number of cells in the accumulator (270 cells for ePBR24)
-#define NUM_CELLS			270
+#define NUM_CELLS 270
+#define NUM_CELL_PER_EMUS_CELL 3
+#define NUM_EMUS_CELLS (NUM_CELLS / NUM_CELL_PER_EMUS_CELL)
 #define CELLS_PER_CAN_FRAME	8
 
-#define CAN_BMS_BASE_ID         0x10
+#define CAN_BMS_BASE_ID         0x100
 
 #define CAN_BMS_OVERALL_ID		CAN_BMS_BASE_ID + 0
 #define CAN_BMS_DIAGNOSTIC_ID	CAN_BMS_BASE_ID + 7
