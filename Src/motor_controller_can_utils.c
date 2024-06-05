@@ -160,6 +160,14 @@ void UpdateMCState(int16_t mc_trottle_val) {
 	}
 }
 
+_Bool isMcCanId(uint16_t canId){
+    return (canId == CAN_MC_RX_HIGHSPEED) || (canId == CAN_MC_RX_TEMP1_ID) || (canId == CAN_MC_RX_TEMP2_ID) ||
+        (canId == CAN_MC_RX_ANALOG_INPUTS_VOLTAGE) || (canId == CAN_MC_RX_DIGITAL_INPUT_STATUS )||
+        (canId == CAN_MC_RX_MOTOR_ID) || (canId == CAN_MC_RX_CURRENT_ID) || (canId == CAN_MC_RX_VOLT_ID) ||
+        (canId == CAN_MC_RX_FAULT_ID) || (canId == CAN_MC_RX_INTERNAL_VOLTAGES) || (canId == CAN_MC_RX_INTERNAL_STATES) ||
+        (canId == CAN_MC_RX_TORQUE_TIMER_INFO) || (canId == CAN_MC_RX_MODULATION_INDEX) || (canId == CAN_MC_RX_FIRMWARE_INFO) ||
+        (canId == CAN_MC_RX_DIAGNOSTIC_DATA) || (canId == CAN_MC_RX_TORQUE_CAPABILITY) || (canId == CAN_MC_RX_TEMP3_ID);
+}
 
 /*
  * GETTERS
