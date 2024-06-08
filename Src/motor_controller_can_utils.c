@@ -13,7 +13,7 @@
 
 //busvoltage at 333V, 90% of full bus voltage is ~300
 //meausred using bench top power supply powered to 270V, then added 100 margin
-#define BUS_VOLTAGE_90_PER_LIMIT 3200 //[11000] reduced, was 12600
+#define BUS_VOLTAGE_90_PER_LIMIT 2700 //[11000] reduced, was 12600
 #define TR_MAX_RPM 6000
 
 
