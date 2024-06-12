@@ -1021,4 +1021,19 @@ void DisableMC() {
 	mc_enable_inverter = 0;
 }
 
+/**
+ * Change the speed from the motor to wheel speed
+ * @return Wheel speed rounded to nearest int
+ */
+int wheel_speed_MC(){
+    int speed_MC = mc_get_motor_RPM();
+    float gear_constant = 3.571 ; //Gear and differential ratio of the motor to the wheel axial
+    int speed_Wheel = 0;
+    float wheel_radius = 0.23;
+
+    speed_Wheel = speed_MC / gear_constant * wheel_radius;
+
+    return speed_Wheel;
+}
+
 
