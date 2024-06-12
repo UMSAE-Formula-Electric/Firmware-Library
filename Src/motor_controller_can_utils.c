@@ -13,7 +13,7 @@
 
 //busvoltage at 333V, 90% of full bus voltage is ~300
 //meausred using bench top power supply powered to 270V, then added 100 margin
-#define BUS_VOLTAGE_90_PER_LIMIT 3200 //[11000] reduced, was 12600
+#define BUS_VOLTAGE_90_PER_LIMIT 2700 //[11000] reduced, was 12600
 #define TR_MAX_RPM 6000
 
 
@@ -104,7 +104,7 @@ int16_t mc_output_voltage = 0;
 int16_t mc_vd = 0;
 int16_t mc_vq = 0;
 
-int8_t  mc_direction = 0;
+int8_t  mc_direction = 1;
 int8_t  mc_enable_inverter = 0;
 int8_t  mc_enable_discharge = 0;
 int16_t mc_torque_limit = 0;
@@ -160,6 +160,14 @@ void UpdateMCState(int16_t mc_trottle_val) {
 	}
 }
 
+_Bool isMcCanId(uint16_t canId){
+    return (canId == CAN_MC_RX_HIGHSPEED) || (canId == CAN_MC_RX_TEMP1_ID) || (canId == CAN_MC_RX_TEMP2_ID) ||
+        (canId == CAN_MC_RX_ANALOG_INPUTS_VOLTAGE) || (canId == CAN_MC_RX_DIGITAL_INPUT_STATUS )||
+        (canId == CAN_MC_RX_MOTOR_ID) || (canId == CAN_MC_RX_CURRENT_ID) || (canId == CAN_MC_RX_VOLT_ID) ||
+        (canId == CAN_MC_RX_FAULT_ID) || (canId == CAN_MC_RX_INTERNAL_VOLTAGES) || (canId == CAN_MC_RX_INTERNAL_STATES) ||
+        (canId == CAN_MC_RX_TORQUE_TIMER_INFO) || (canId == CAN_MC_RX_MODULATION_INDEX) || (canId == CAN_MC_RX_FIRMWARE_INFO) ||
+        (canId == CAN_MC_RX_DIAGNOSTIC_DATA) || (canId == CAN_MC_RX_TORQUE_CAPABILITY) || (canId == CAN_MC_RX_TEMP3_ID);
+}
 
 /*
  * GETTERS

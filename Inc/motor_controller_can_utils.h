@@ -44,6 +44,8 @@
 
 #define PEAK_TORQUE			230	//Peak torque for EMRAX 228 motor
 
+_Bool isMcCanId(uint16_t canId);
+
 //Getters
 float mc_getIGBTACurrent();
 float mc_getIGBTBCurrent();
