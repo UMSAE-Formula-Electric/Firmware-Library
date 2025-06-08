@@ -11,10 +11,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-//busvoltage at 333V, 90% of full bus voltage is ~300
-//meausred using bench top power supply powered to 270V, then added 100 margin
-#define BUS_VOLTAGE_90_PER_LIMIT 2700 //[11000] reduced, was 12600
-#define TR_MAX_RPM 6000
+//busvoltage at 324V-378V -> ~360V, 90% of full bus voltage is ~324
+//TODO: measure bench voltage on the test bench, then added 100 margin
+#define BUS_VOLTAGE_90_PER_LIMIT 3000 //we are using ~80% since this was what was used
+#define TR_MAX_RPM 6000				  // previously but we could verify with testing
 
 
 //Global variables
