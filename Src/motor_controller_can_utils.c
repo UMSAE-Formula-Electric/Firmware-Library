@@ -967,6 +967,12 @@ void sendZeroTorque() {
 	mc_set_torque(0);
 }
 
+/**
+ * @brief Sends a CAN message to the motor controller to which enables the messages the 
+ *        selected messages to be broadcast
+ *        - Note: Refer to the cascadia motion documentation for the types of messages you can enable 
+ *          in bytes 4 and 5
+ */
 void mc_enable_broadcast_msgs() {
 	uint8_t data[2];
 	data[0] = MC_ENABLE_BYTE_4;
@@ -975,6 +981,11 @@ void mc_enable_broadcast_msgs() {
 			data);
 }
 
+/**
+ * @brief Sends a CAN message to the motor controller to which disables broadcasted messages
+ *        - Note: Refer to the cascadia motion documentation for the types of messages you can disable 
+ *          in bytes 4 and 5
+ */
 void mc_disable_broadcast_msgs() {
 	uint8_t data[2];
 

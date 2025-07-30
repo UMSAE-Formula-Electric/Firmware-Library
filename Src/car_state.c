@@ -9,7 +9,5 @@ void set_car_state(enum CAR_STATE new_state){
 }
 
 enum CAR_STATE get_car_state(){
-	enum CAR_STATE state;
-	state = current_state;
-	return state;
+	return current_state;
 }

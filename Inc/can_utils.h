@@ -14,46 +14,28 @@
 #include "stm32f4xx_hal.h"
 #include "cmsis_os2.h"
 
-#define CAN_MC_QUEUE_LENGTH 		64
-#define CAN_AMS_QUEUE_LENGTH 		64
-#define CAN_ACB_VCU_QUEUE_LENGTH 	64
-#define CAN_QUEUE_LENGTH 			64
-
-#define CAN_QUEUE_ITEM_SIZE sizeof( CanRxMsg )
-
-#define CANTXTIMEOUT 			10 //number of milleseconds to wait for the can packet to send
-#define CANTXMBTIMEOUT			10 //number of retires to get a mailbox on send
-
-#define CAN_NO_RTR 				0
-#define CAN_RTR 				1
-
-#define CAN_SUB_Q_DELAY_MS 		100
-
 #define CAN_MC_ACTIVE_MESSAGES  0x0C1
-#define CAN_MC_RESPONSE_MSG     0x0C2
+#define CAN_MC_RESPONSE_MSG     0x0C2 // unused but move to general CAN ID file for future use
 
-#define CAN_ACU_CAN_ID			0x69
-#define CAN_VCU_CAN_ID			0x88
-#define CAN_SCU_CAN_ID			0x89
-#define CAN_AMS_CAN_ID          0x70
-#define CAN_VCU_LOG_ID			0x71 //ID for sending VCU data to ACB
+// Keep these values for now and change them when you can do CAN bus testing
+// TODO: consider general purpose board-to-board msg IDs ex. the prev: #define CAN_ACU_CAN_ID 0x69
 
 /* HeartBeats */
-#define CAN_ACU_TO_VCU_ID 0x002
-#define CAN_ACU_TO_SCU_ID 0x201
-#define CAN_VCU_TO_ACU_ID 0x003
-#define CAN_VCU_TO_SCU_ID 0x203
-#define CAN_SCU_TO_ACU_ID 0x204
-#define CAN_SCU_TO_VCU_ID 0x205
+#define CAN_VCU_SET_ACB_STATE_ID	0x001
+#define CAN_ACU_TO_VCU_ID           0x002
+#define CAN_VCU_TO_ACU_ID           0x003
 
-#define CAN_VCU_SET_ACB_STATE_ID	0x01
+/* CAN Message Flags */
+#define CAN_NO_EXT 				0 // Define to send a CAN 2.0 message (11-bit standard ID)
+#define CAN_EXT 				1 // Define to send a CAN 2.0B message (29-bit extended ID) 
 
-#define CAN_EXT 				1
-#define CAN_NO_EXT 				0
+#define CAN_NO_RTR 				0
+#define CAN_RTR 				1 // not used? use CAN HAL version?
 
 extern osMessageQueueId_t canRxPacketQueueHandle;
 extern osMessageQueueId_t canTxPacketQueueHandle;
 extern CAN_HandleTypeDef hcan1;
+// TODO: Add hcan2 extern ref if we want to implement that on any board
 
 typedef struct {
     CAN_RxHeaderTypeDef rxPacketHeader;
@@ -76,8 +58,6 @@ enum STARTUP_STATUS_NOTIFY_MSG{
     CAN_AIR_WELD_SET,
     CAN_HEARTBEAT_REQUEST,
     CAN_HEARTBEAT_RESPONSE,
-    CAN_BATTERY_VOLTAGE_REQUEST,
-    CAN_BATTERY_VOLTAGE_RESPONSE
 };
 
 /* End Defines */
