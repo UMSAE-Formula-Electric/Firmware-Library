@@ -1,9 +1,104 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#define VCU_LOG_MSG_LEN 32
-
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+#include "semphr.h"
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdarg.h>
+
+//	Configuration definitions
+#define VCU_LOG_MSG_LEN 256
+#define LOG_QUEUE_LENGTH 32
+#define LOG_ENABLE_METADATA 1
+#define LIBRARY_LOG_LEVEL LOG_DEBUG
+
+
+#define LOG_NONE	0
+#define LOG_ERROR	1
+#define LOG_WARN	2
+#define LOG_INFO	3
+#define LOG_DEBUG	4
+
+/* Metadata information to prepend to every log message. */
+#if LOG_ENABLE_METADATA
+    #define LOG_METADATA_FORMAT  "[%s:%d][%s] "
+    #define LOG_METADATA_ARGS    __FUNCTION__, __LINE__, pcTaskGetName(NULL)
+#else
+    #define LOG_METADATA_FORMAT  ""
+    #define LOG_METADATA_ARGS
+#endif
+
+/**
+ * @brief Common macro that maps all the logging interfaces,
+ * (#LogDebug, #LogInfo, #LogWarn, #LogError) to the platform-specific logging
+ * function.
+ *
+ * @note The default definition of this macro generates logging via a printf-like
+ * vLoggingPrintf function.
+ */
+#ifndef SdkLog
+    #define SdkLog( message )    //input a treadsafe inplementation to print to serial.
+#endif
+
+/**
+ * Disable definition of logging interface macros when generating doxygen output,
+ * to avoid conflict with documentation of macros at the end of the file.
+ */
+/* Check that LIBRARY_LOG_LEVEL is defined and has a valid value. */
+#if !defined( LIBRARY_LOG_LEVEL ) ||       \
+    ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && \
+    ( LIBRARY_LOG_LEVEL != LOG_ERROR ) &&  \
+    ( LIBRARY_LOG_LEVEL != LOG_WARN ) &&   \
+    ( LIBRARY_LOG_LEVEL != LOG_INFO ) &&   \
+    ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) )
+    #error "Please define LIBRARY_LOG_LEVEL as either LOG_NONE, LOG_ERROR, LOG_WARN, LOG_INFO, or LOG_DEBUG."
+#else
+    #if LIBRARY_LOG_LEVEL == LOG_DEBUG
+        /* All log level messages will logged. */
+        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogInfo( message )      SdkLog( ( "[INFO] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogDebug( message )     SdkLog( ( "[DEBUG] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+
+    #elif LIBRARY_LOG_LEVEL == LOG_INFO
+        /* Only INFO, WARNING, ERROR, and ALWAYS messages will be logged. */
+        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogInfo( message )      SdkLog( ( "[INFO] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogDebug( message )
+
+    #elif LIBRARY_LOG_LEVEL == LOG_WARN
+        /* Only WARNING, ERROR, and ALWAYS messages will be logged. */
+        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogInfo( message )
+        #define LogDebug( message )
+
+    #elif LIBRARY_LOG_LEVEL == LOG_ERROR
+        /* Only ERROR and ALWAYS messages will be logged. */
+        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
+        #define LogWarn( message )
+        #define LogInfo( message )
+        #define LogDebug( message )
+
+    #else /* if LIBRARY_LOG_LEVEL == LOG_NONE */
+
+        #define LogAlways( message )
+        #define LogError( message )
+        #define LogWarn( message )
+        #define LogInfo( message )
+        #define LogDebug( message )
+
+    #endif /* if LIBRARY_LOG_LEVEL == LOG_NONE */
+#endif /* if !defined( LIBRARY_LOG_LEVEL ) || ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && ( LIBRARY_LOG_LEVEL != LOG_ERROR ) && ( LIBRARY_LOG_LEVEL != LOG_WARN ) && ( LIBRARY_LOG_LEVEL != LOG_INFO ) && ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) ) */
 
 extern char SD_ERROR_STATE;
 
@@ -66,6 +161,22 @@ typedef enum {
 	NUM_OF_INDICATORS			// 07
 } INDICATOR;
 
+typedef struct {
+    uint8_t header;  // Level:bits[7-6], Task:bits[5-2], State:bits[1-0]
+    char message[256];
+    uint32_t timestamp;
+} log_message_t;
+
+
+// Debug message structure
+typedef struct {
+	uint8_t start;
+    uint8_t header;         // Packed 2-4-2 bit fields
+    char message[256];      // Null-terminated string
+    uint8_t checksum;
+    uint8_t end;
+} DebugMessage_t;
+
 
 //Sensor-Related
 extern float data_sensors[NUM_OF_SENSORS];
@@ -103,5 +214,12 @@ void logMessage(char *data, bool critical);
 
 void enableVCULogging();
 void nullTerminate(char *str);
+
+
+// Initialize debug system
+void debug_init();
+
+// Send debug message
+void debug_log();
 
 #endif
