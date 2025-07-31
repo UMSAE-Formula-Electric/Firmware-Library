@@ -41,7 +41,7 @@
  * vLoggingPrintf function.
  */
 #ifndef SdkLog
-    #define SdkLog( message )    //input a treadsafe inplementation to print to serial.
+    #define SdkLog( message )   vLoggerEnqeuePrintf message //input a threadsafe inplementation to print to serial.
 #endif
 
 /**
@@ -59,33 +59,32 @@
 #else
     #if LIBRARY_LOG_LEVEL == LOG_DEBUG
         /* All log level messages will logged. */
-        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogInfo( message )      SdkLog( ( "[INFO] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogDebug( message )     SdkLog( ( "[DEBUG] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-
+		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogInfo(message, ...) vFormattedLog("INFO", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogDebug(message, ...) vFormattedLog("DEBUG", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
     #elif LIBRARY_LOG_LEVEL == LOG_INFO
         /* Only INFO, WARNING, ERROR, and ALWAYS messages will be logged. */
-        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogInfo( message )      SdkLog( ( "[INFO] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogDebug( message )
+		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogInfo(message, ...) vFormattedLog("INFO", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogDebug( message )
 
     #elif LIBRARY_LOG_LEVEL == LOG_WARN
         /* Only WARNING, ERROR, and ALWAYS messages will be logged. */
-        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogWarn( message )      SdkLog( ( "[WARN] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogInfo( message )
+		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogInfo( message )
         #define LogDebug( message )
 
     #elif LIBRARY_LOG_LEVEL == LOG_ERROR
         /* Only ERROR and ALWAYS messages will be logged. */
-        #define LogAlways( message )    SdkLog( ( "[ALWAYS] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogError( message )     SdkLog( ( "[ERROR] [%s] "LOG_METADATA_FORMAT, LIBRARY_LOG_NAME, LOG_METADATA_ARGS ) ); SdkLog( message ); SdkLog( ( "\r\n" ) )
-        #define LogWarn( message )
+		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LogWarn( message )
         #define LogInfo( message )
         #define LogDebug( message )
 
@@ -210,6 +209,11 @@ extern char BT_ERROR_STATE;
 
 bool logInitialize();
 bool logTerminate();
+// Forward declaration
+void vUSARTLoggerTask(void *pvParameters);
+void vFormattedLog(const char *level, const char *fmt, ...);
+
+
 void logMessage(char *data, bool critical);
 
 void enableVCULogging();
