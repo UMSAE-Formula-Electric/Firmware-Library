@@ -11,9 +11,9 @@
 #include <stdarg.h>
 
 //	Configuration definitions
-#define VCU_LOG_MSG_LEN 256
+#define VCU_LOG_MSG_LEN 512
 #define LOG_QUEUE_LENGTH 32
-#define LOG_ENABLE_METADATA 1
+#define LOG_ENABLE_METADATA 0
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
 
 
@@ -24,6 +24,7 @@
 #define LOG_DEBUG	4
 
 /* Metadata information to prepend to every log message. */
+//TODO Messages were not happy about this being in the macros. Will have to address this in a future update.
 #if LOG_ENABLE_METADATA
     #define LOG_METADATA_FORMAT  "[%s:%d][%s] "
     #define LOG_METADATA_ARGS    __FUNCTION__, __LINE__, pcTaskGetName(NULL)
@@ -34,14 +35,14 @@
 
 /**
  * @brief Common macro that maps all the logging interfaces,
- * (#LogDebug, #LogInfo, #LogWarn, #LogError) to the platform-specific logging
+ * (#LOGDEBUG, #LOGINFO, #LOGWARN, #LOGERROR) to the platform-specific logging
  * function.
  *
  * @note The default definition of this macro generates logging via a printf-like
  * vLoggingPrintf function.
  */
 #ifndef SdkLog
-    #define SdkLog( message )   vLoggerEnqeuePrintf message //input a threadsafe inplementation to print to serial.
+    #define SdkLog( message )   vLoggerEnqueuePrintf(message)
 #endif
 
 /**
@@ -59,42 +60,42 @@
 #else
     #if LIBRARY_LOG_LEVEL == LOG_DEBUG
         /* All log level messages will logged. */
-		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogInfo(message, ...) vFormattedLog("INFO", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogDebug(message, ...) vFormattedLog("DEBUG", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO(message, ...) vFormattedLog("INFO", message, ##__VA_ARGS__)
+		#define LOGDEBUG(message, ...) vFormattedLog("DEBUG", message, ##__VA_ARGS__)
     #elif LIBRARY_LOG_LEVEL == LOG_INFO
         /* Only INFO, WARNING, ERROR, and ALWAYS messages will be logged. */
-		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogInfo(message, ...) vFormattedLog("INFO", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogDebug( message )
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO(message, ...) vFormattedLog("INFO", message, ##__VA_ARGS__)
+		#define LOGDEBUG( message )
 
     #elif LIBRARY_LOG_LEVEL == LOG_WARN
         /* Only WARNING, ERROR, and ALWAYS messages will be logged. */
-		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogWarn(message, ...) vFormattedLog("WARN", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogInfo( message )
-        #define LogDebug( message )
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO( message )
+        #define LOGDEBUG( message )
 
     #elif LIBRARY_LOG_LEVEL == LOG_ERROR
         /* Only ERROR and ALWAYS messages will be logged. */
-		#define LogAlways(message, ...) vFormattedLog("ALWAYS", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogError(message, ...) vFormattedLog("ERROR", "[%s] " LOG_METADATA_FORMAT message "\r\n", LIBRARY_LOG_NAME, LOG_METADATA_ARGS, ##__VA_ARGS__)
-		#define LogWarn( message )
-        #define LogInfo( message )
-        #define LogDebug( message )
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN( message )
+        #define LOGINFO( message )
+        #define LOGDEBUG( message )
 
     #else /* if LIBRARY_LOG_LEVEL == LOG_NONE */
 
-        #define LogAlways( message )
-        #define LogError( message )
-        #define LogWarn( message )
-        #define LogInfo( message )
-        #define LogDebug( message )
+        #define LOGALWAYS( message )
+        #define LOGERROR( message )
+        #define LOGWARN( message )
+        #define LOGINFO( message )
+        #define LOGDEBUG( message )
 
     #endif /* if LIBRARY_LOG_LEVEL == LOG_NONE */
 #endif /* if !defined( LIBRARY_LOG_LEVEL ) || ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && ( LIBRARY_LOG_LEVEL != LOG_ERROR ) && ( LIBRARY_LOG_LEVEL != LOG_WARN ) && ( LIBRARY_LOG_LEVEL != LOG_INFO ) && ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) ) */
@@ -162,7 +163,7 @@ typedef enum {
 
 typedef struct {
     uint8_t header;  // Level:bits[7-6], Task:bits[5-2], State:bits[1-0]
-    char message[256];
+    char message[512];
     uint32_t timestamp;
 } log_message_t;
 
@@ -207,23 +208,44 @@ extern char BT_ERROR_STATE;
  * 0x09: Not Enough Free Space Available
  **/
 
-bool logInitialize();
-bool logTerminate();
+bool logInitialize(void);
+bool logTerminate(void);
 // Forward declaration
 void vUSARTLoggerTask(void *pvParameters);
-void vFormattedLog(const char *level, const char *fmt, ...);
+/**
+ * @brief Logs a formatted message with a specified log level to a queue.
+ *
+ * This function formats a log message with a variable number of arguments, prefixes it with a log level (e.g., "[INFO]"),
+ * and sends it to a FreeRTOS queue for processing. If the queue is full, it falls back to sending an error message via USART.
+ *
+ * @param Log_Level The severity level of the log (e.g., "INFO", "ERROR", "DEBUG").
+ * @param format A printf-style format string for the log message.
+ * @param ... Variable arguments to be formatted into the log message.
+ *
+ * @note
+ * - Requires `LOGGING_INITIALIZED` to be true; otherwise, the function does nothing.
+ * - Uses `vsnprintf` to safely format the message with a fixed buffer size (`VCU_LOG_MSG_LEN`).
+ * - Appends a timestamp (`xTaskGetTickCount()`) and a header byte (currently `0x00`) to the log message.
+ * - If the queue (`xLogQueue`) is full, it transmits a "Queue full!" warning via USART.
+ * - The message is truncated if it exceeds the buffer size.
+ *
+ * @warning
+ * - Ensure `xLogQueue` is properly initialized before calling this function.
+ *
+ * @see xQueueSend(), vsnprintf(), HAL_USART_Transmit()
+ */
+void vFormattedLog(const char *Log_Level, const char *format, ...);
 
 
 void logMessage(char *data, bool critical);
-
 void enableVCULogging();
 void nullTerminate(char *str);
 
 
 // Initialize debug system
-void debug_init();
+void debug_init(void);
 
 // Send debug message
-void debug_log();
+void debug_log(void);
 
 #endif
