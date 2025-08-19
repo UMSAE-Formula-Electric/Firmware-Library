@@ -2,6 +2,7 @@
 #define LOGGER_H_
 
 #include "FreeRTOS.h"
+#include "cmsis_os.h"
 #include "queue.h"
 #include "task.h"
 #include "semphr.h"
@@ -11,10 +12,13 @@
 #include <stdarg.h>
 
 //	Configuration definitions
-#define VCU_LOG_MSG_LEN 512
-#define LOG_QUEUE_LENGTH 32
+#define VCU_LOG_MSG_LEN 256
+#define LOG_QUEUE_LENGTH 16
 #define LOG_ENABLE_METADATA 0
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
+#define LOGGING_TASK_ENABLED 1
+static QueueHandle_t xLogQueue;
+static osThreadId_t loggerTaskHandle;
 
 
 #define LOG_NONE	0
@@ -163,8 +167,7 @@ typedef enum {
 
 typedef struct {
     uint8_t header;  // Level:bits[7-6], Task:bits[5-2], State:bits[1-0]
-    char message[512];
-    uint32_t timestamp;
+    char message[128];
 } log_message_t;
 
 

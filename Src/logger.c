@@ -1,3 +1,4 @@
+// Includes
 #include "logger.h"
 #include "usart.h"
 #include "FreeRTOS.h"
@@ -6,6 +7,10 @@
 #include "cmsis_os.h"
 #include "usart.h"
 #include <string.h>
+
+// Defines
+#define DELAY pdMS_TO_TICKS(5)
+
 
 //Stores the current state of the logger initialization
 bool LOGGING_INITIALIZED = false;
@@ -19,7 +24,6 @@ int VCU_msgLen = 0;
 
 static int VCU_loggingReady = 0;
 
-static QueueHandle_t xLogQueue;
 
 /*
  * logInitialize()
@@ -41,18 +45,18 @@ bool logInitialize() {
         osThreadAttr_t loggerTaskAttr = {
             .name = "USARTLogger",
             .stack_size = 512,  // Adjust as needed
-            .priority = osPriorityNormal,  // Maps to tskIDLE_PRIORITY + 1
+            .priority = osPriorityHigh,
         };
 
-        osThreadId_t threadId = osThreadNew(vUSARTLoggerTask, NULL, &loggerTaskAttr);
-        if (threadId == NULL) {
+        loggerTaskHandle = osThreadNew(vUSARTLoggerTask, NULL, &loggerTaskAttr);
+        if (loggerTaskHandle == NULL) {
             vQueueDelete(xLogQueue);
             return false;
         }
 
 		LOGGING_INITIALIZED = true;
 
-		HAL_USART_Transmit(&husart2, (uint8_t *) "Logger queue initialized.\r\n", strlen("Logger queue initialized.\r\n"), 10);
+		//HAL_USART_Transmit(&husart2, (uint8_t *) "Logger queue initialized.\r\n", strlen("Logger queue initialized.\r\n"), 10);
 
 
 		return true;
@@ -77,7 +81,6 @@ bool logTerminate() {
     bool success = true;
 
     // Delete the logger task
-    osThreadId_t loggerTaskHandle = osThreadGetId("USARTLogger");
     if(loggerTaskHandle != NULL) {
         osThreadTerminate(loggerTaskHandle);
     } else {
@@ -155,7 +158,6 @@ void vFormattedLog(const char *Log_Level, const char *format, ...) {
         log_message_t msg;
         snprintf(msg.message, sizeof(msg.message), "[%s] %s", Log_Level, buffer);
         msg.message[sizeof(msg.message) - 1] = '\0';
-        msg.timestamp = xTaskGetTickCount();
         msg.header = 0x00; //TODO: This will be used in a future External application that will read the messages to an external computer.
 
         if (xQueueSend(xLogQueue, &msg, pdMS_TO_TICKS(10)) != pdPASS) {
@@ -167,14 +169,20 @@ void vFormattedLog(const char *Log_Level, const char *format, ...) {
 
 void vUSARTLoggerTask(void *pvParameters) {
     log_message_t msg;
-    HAL_USART_Transmit(&husart2, (uint8_t *)"Usart Task started\r\n", strlen("Usart Task started\r\n"), HAL_MAX_DELAY);
+    //HAL_USART_Transmit(&husart2, (uint8_t *)"Usart Task started\r\n", strlen("Usart Task started\r\n"), HAL_MAX_DELAY);
+    LOGINFO("USART message system booted!");
     for (;;) {
-        if (xQueueReceive(xLogQueue, &msg, pdMS_TO_TICKS(10)) == pdPASS) {
+        if (xQueueReceive(xLogQueue, &msg, pdMS_TO_TICKS(25)) == pdPASS) {
             // You can use HAL_UART_Transmit or any USART API here
-            char buffer[300];
-            snprintf(buffer, sizeof(buffer), "[%lu] %s\r\n", msg.timestamp, msg.message);
-            HAL_USART_Transmit(&husart2, (uint8_t *)buffer, strlen(buffer), HAL_MAX_DELAY);
+            char buffer[130];
+            snprintf(buffer, sizeof(buffer), "%s\r\n", msg.message);
+            HAL_USART_Transmit(&husart2, (uint8_t *)buffer, strlen(buffer), 25);
+        }else{
+        	HAL_USART_Transmit(&husart2, (uint8_t *)"osThreadYield()line \r\n",strlen("osThreadYield()line \r\n"),25);
+        	//osThreadYield();
         }
+        osDelay(DELAY);
+        taskYIELD();
     }
 }
 
