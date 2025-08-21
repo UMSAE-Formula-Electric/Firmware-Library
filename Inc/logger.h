@@ -17,15 +17,13 @@
 #define LOG_ENABLE_METADATA 0
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
 #define LOGGING_TASK_ENABLED 1
-static QueueHandle_t xLogQueue;
-static osThreadId_t loggerTaskHandle;
-
 
 #define LOG_NONE	0
 #define LOG_ERROR	1
 #define LOG_WARN	2
 #define LOG_INFO	3
 #define LOG_DEBUG	4
+
 
 /* Metadata information to prepend to every log message. */
 //TODO Messages were not happy about this being in the macros. Will have to address this in a future update.
@@ -104,8 +102,6 @@ static osThreadId_t loggerTaskHandle;
     #endif /* if LIBRARY_LOG_LEVEL == LOG_NONE */
 #endif /* if !defined( LIBRARY_LOG_LEVEL ) || ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && ( LIBRARY_LOG_LEVEL != LOG_ERROR ) && ( LIBRARY_LOG_LEVEL != LOG_WARN ) && ( LIBRARY_LOG_LEVEL != LOG_INFO ) && ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) ) */
 
-extern char SD_ERROR_STATE;
-
 /*	Typedef'd enumerator for sensors
 *		Final value, NUM_OF_SENSORS returns total number of sensors
 *		--ALWAYS HAVE NUM_OF_SENSORS AS THE LAST ENUM VALUE--
@@ -182,9 +178,7 @@ typedef struct {
 
 
 //Sensor-Related
-extern float data_sensors[NUM_OF_SENSORS];
-extern char *data_ids_sd[NUM_OF_SENSORS+1];
-extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
+
 
 /**
  * BT ERROR STATES:
@@ -193,7 +187,6 @@ extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
  * 0x01: Failed to Create BT RTOS Task for Dumping
  * 0x02: Invalid Data Entry Type
  **/
-
 extern char BT_ERROR_STATE;
 
 /**
@@ -210,45 +203,22 @@ extern char BT_ERROR_STATE;
  * 0x08: Failed to Get Free Space Available
  * 0x09: Not Enough Free Space Available
  **/
+extern char SD_ERROR_STATE;
 
+// Global Variables
+extern QueueHandle_t xLogQueue;
+extern osThreadId_t loggerTaskHandle;
+extern bool LOGGING_INITIALIZED;
+extern float data_sensors[NUM_OF_SENSORS];
+extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
+
+// Function prototypes
 bool logInitialize(void);
 bool logTerminate(void);
-// Forward declaration
 void vUSARTLoggerTask(void *pvParameters);
-/**
- * @brief Logs a formatted message with a specified log level to a queue.
- *
- * This function formats a log message with a variable number of arguments, prefixes it with a log level (e.g., "[INFO]"),
- * and sends it to a FreeRTOS queue for processing. If the queue is full, it falls back to sending an error message via USART.
- *
- * @param Log_Level The severity level of the log (e.g., "INFO", "ERROR", "DEBUG").
- * @param format A printf-style format string for the log message.
- * @param ... Variable arguments to be formatted into the log message.
- *
- * @note
- * - Requires `LOGGING_INITIALIZED` to be true; otherwise, the function does nothing.
- * - Uses `vsnprintf` to safely format the message with a fixed buffer size (`VCU_LOG_MSG_LEN`).
- * - Appends a timestamp (`xTaskGetTickCount()`) and a header byte (currently `0x00`) to the log message.
- * - If the queue (`xLogQueue`) is full, it transmits a "Queue full!" warning via USART.
- * - The message is truncated if it exceeds the buffer size.
- *
- * @warning
- * - Ensure `xLogQueue` is properly initialized before calling this function.
- *
- * @see xQueueSend(), vsnprintf(), HAL_USART_Transmit()
- */
 void vFormattedLog(const char *Log_Level, const char *format, ...);
-
-
 void logMessage(char *data, bool critical);
 void enableVCULogging();
 void nullTerminate(char *str);
-
-
-// Initialize debug system
-void debug_init(void);
-
-// Send debug message
-void debug_log(void);
 
 #endif

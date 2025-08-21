@@ -8,12 +8,19 @@
 #include "usart.h"
 #include <string.h>
 
-// Defines
+/**
+ * @brief Delay between queue checks in milliseconds
+ */
 #define DELAY pdMS_TO_TICKS(5)
+
+// Global Variables
 
 
 //Stores the current state of the logger initialization
 bool LOGGING_INITIALIZED = false;
+
+QueueHandle_t xLogQueue;
+osThreadId_t loggerTaskHandle;
 
 //Holds all the sensor values
 float data_sensors[NUM_OF_SENSORS] = {0.0f/0.0f};
@@ -28,7 +35,15 @@ static int VCU_loggingReady = 0;
 /*
  * logInitialize()
  *
- * Initializes logging queue
+ * @brief Initializes the logging system
+ *
+ * Performs the following initialization steps
+ * 1. Creates a queue for log entries
+ * 2. Creates and starts the USART logger task
+ * 3. Sets the initialization flag.
+ *
+ * @return true - Logging system successfully initialized
+ * @return false - Initialization failed
  *
  */
 bool logInitialize() {
@@ -36,12 +51,14 @@ bool logInitialize() {
 	if(!LOGGING_INITIALIZED) {
 		//On success, set the bool flag and return true
 
+		// Create message queue
 		xLogQueue = xQueueCreate(LOG_QUEUE_LENGTH, sizeof(log_message_t));
 		if(xLogQueue == NULL){
 			HAL_USART_Transmit(&husart2, (uint8_t *) "Logger queue failed to initialize\r\n", strlen("Logger queue failed to initialize\r\n"), 10);
 			return false;
 		}
 
+		// Create logger task
         osThreadAttr_t loggerTaskAttr = {
             .name = "USARTLogger",
             .stack_size = 512,  // Adjust as needed
@@ -51,6 +68,7 @@ bool logInitialize() {
         loggerTaskHandle = osThreadNew(vUSARTLoggerTask, NULL, &loggerTaskAttr);
         if (loggerTaskHandle == NULL) {
             vQueueDelete(xLogQueue);
+            xLogQueue = NULL;
             return false;
         }
 
@@ -69,8 +87,16 @@ bool logInitialize() {
 
 /*
  * logTerminate()
+ * @brief Shuts down the logging system
  *
- * Closes the SD card/stops logging and cleans up resources
+ * Performs the following:
+ * 1. Terminate the logger task
+ * 2. Empties and deletes the message queue.
+ * 3. Sets initialization to false.
+ *
+ * @return true - all the clean up was successful
+ * @return false - one or more of the clean up operations failed
+ *
  */
 bool logTerminate() {
     // Only proceed if logging is initialized
@@ -143,10 +169,19 @@ void logMessage(char *data, bool critical) {
 	}
 }
 
+/**
+ * @brief Formats and enqueues log messages with severity levels
+ *
+ * @param Log_Level String representing message severity ("ERROR","WARN", etc.)
+ * @param format printf-style format string for the message content
+ * @param ... Variable arguments for the format string
+ */
 
 void vFormattedLog(const char *Log_Level, const char *format, ...) {
     if (LOGGING_INITIALIZED) {
+
         char buffer[VCU_LOG_MSG_LEN];
+        log_message_t msg;
 
         // All the additional arguments used in the log will be handled by this block of code.
         va_list args;
@@ -155,18 +190,24 @@ void vFormattedLog(const char *Log_Level, const char *format, ...) {
         va_end(args);
 
         // Put the log level in front of the message
-        log_message_t msg;
         snprintf(msg.message, sizeof(msg.message), "[%s] %s", Log_Level, buffer);
         msg.message[sizeof(msg.message) - 1] = '\0';
         msg.header = 0x00; //TODO: This will be used in a future External application that will read the messages to an external computer.
 
         if (xQueueSend(xLogQueue, &msg, pdMS_TO_TICKS(10)) != pdPASS) {
-            HAL_USART_Transmit(&husart2, (uint8_t *)"Queue full!\r\n", strlen("Queue full!\r\n"), 100);
+            HAL_USART_Transmit(&husart2, (uint8_t *)"[WARN] Log queue full! Message Dropped\r\n", strlen("[WARN] Log queue full! Message Dropped\r\n"), 100);
         }
     }
 }
 
-
+/**
+ * @brief USART logger task. Transmits queued messages.
+ * This Task continuously checks to:
+ * 1. Check the queue for a new message.
+ * 2. transmits via USART
+ *
+ * @param pvParameters task parameters
+ */
 void vUSARTLoggerTask(void *pvParameters) {
     log_message_t msg;
     //HAL_USART_Transmit(&husart2, (uint8_t *)"Usart Task started\r\n", strlen("Usart Task started\r\n"), HAL_MAX_DELAY);
