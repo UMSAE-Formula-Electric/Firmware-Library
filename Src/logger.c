@@ -26,7 +26,7 @@ osThreadId_t loggerTaskHandle;
 float data_sensors[NUM_OF_SENSORS] = {0.0f/0.0f};
 
 //Holds the VCUs message sent over CAN (Used by the ACB to decompile the VCUs message)
-char VCU_msg[VCU_LOG_MSG_LEN];
+char VCU_msg[LOG_MSG_LEN];
 int VCU_msgLen = 0;
 
 static int VCU_loggingReady = 0;
@@ -180,7 +180,7 @@ void logMessage(char *data, bool critical) {
 void vFormattedLog(const char *Log_Level, const char *format, ...) {
     if (LOGGING_INITIALIZED) {
 
-        char buffer[VCU_LOG_MSG_LEN];
+        char buffer[LOG_MSG_LEN];
         log_message_t msg;
 
         // All the additional arguments used in the log will be handled by this block of code.

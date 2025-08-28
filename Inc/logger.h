@@ -12,17 +12,11 @@
 #include <stdarg.h>
 
 //	Configuration definitions
-#define VCU_LOG_MSG_LEN 256
+#define LOG_MSG_LEN 256
 #define LOG_QUEUE_LENGTH 16
 #define LOG_ENABLE_METADATA 0
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
 #define LOGGING_TASK_ENABLED 1
-
-//#define LOG_NONE	0
-//#define LOG_ERROR	1
-//#define LOG_WARN	2
-//#define LOG_INFO	3
-//#define LOG_DEBUG	4
 
 typedef enum{
 	LOG_NONE  = 0,
@@ -31,7 +25,6 @@ typedef enum{
 	LOG_INFO,
 	LOG_DEBUG
 }LogLevel_t;
-
 
 
 /* Metadata information to prepend to every log message. */
