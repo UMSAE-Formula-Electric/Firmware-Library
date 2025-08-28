@@ -74,7 +74,7 @@ bool logInitialize() {
 
 		LOGGING_INITIALIZED = true;
 
-		//HAL_USART_Transmit(&husart2, (uint8_t *) "Logger queue initialized.\r\n", strlen("Logger queue initialized.\r\n"), 10);
+		HAL_USART_Transmit(&husart2, (uint8_t *) "Logger queue initialized.\r\n", strlen("Logger queue initialized.\r\n"), 10);
 
 
 		return true;
@@ -210,7 +210,6 @@ void vFormattedLog(const char *Log_Level, const char *format, ...) {
  */
 void vUSARTLoggerTask(void *pvParameters) {
     log_message_t msg;
-    //HAL_USART_Transmit(&husart2, (uint8_t *)"Usart Task started\r\n", strlen("Usart Task started\r\n"), HAL_MAX_DELAY);
     LOGINFO("USART message system booted!");
     for (;;) {
         if (xQueueReceive(xLogQueue, &msg, pdMS_TO_TICKS(25)) == pdPASS) {
@@ -219,8 +218,7 @@ void vUSARTLoggerTask(void *pvParameters) {
             snprintf(buffer, sizeof(buffer), "%s\r\n", msg.message);
             HAL_USART_Transmit(&husart2, (uint8_t *)buffer, strlen(buffer), 25);
         }else{
-        	HAL_USART_Transmit(&husart2, (uint8_t *)"osThreadYield()line \r\n",strlen("osThreadYield()line \r\n"),25);
-        	//osThreadYield();
+        	osThreadYield();
         }
         osDelay(DELAY);
         taskYIELD();
