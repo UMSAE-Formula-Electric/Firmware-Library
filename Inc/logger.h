@@ -18,15 +18,24 @@
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
 #define LOGGING_TASK_ENABLED 1
 
-#define LOG_NONE	0
-#define LOG_ERROR	1
-#define LOG_WARN	2
-#define LOG_INFO	3
-#define LOG_DEBUG	4
+//#define LOG_NONE	0
+//#define LOG_ERROR	1
+//#define LOG_WARN	2
+//#define LOG_INFO	3
+//#define LOG_DEBUG	4
+
+typedef enum{
+	LOG_NONE  = 0,
+	LOG_ERROR,
+	LOG_WARN,
+	LOG_INFO,
+	LOG_DEBUG
+}LogLevel_t;
+
 
 
 /* Metadata information to prepend to every log message. */
-//TODO Messages were not happy about this being in the macros. Will have to address this in a future update.
+//TODO Messages were not compiling with all the nested string formats happening. Will need to refactor code to include Task name and time when fucntion was being run.
 #if LOG_ENABLE_METADATA
     #define LOG_METADATA_FORMAT  "[%s:%d][%s] "
     #define LOG_METADATA_ARGS    __FUNCTION__, __LINE__, pcTaskGetName(NULL)
