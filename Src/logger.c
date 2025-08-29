@@ -129,11 +129,9 @@ bool logTerminate() {
     // Reset the initialization flag only if everything succeeded
     if(success) {
         LOGGING_INITIALIZED = false;
-        HAL_USART_Transmit(&husart2, (uint8_t *) "Logger terminated successfully.\r\n",
-                          strlen("Logger terminated successfully.\r\n"), 10);
+        HAL_USART_Transmit(&husart2, (uint8_t *) "Logger terminated successfully.\r\n",strlen("Logger terminated successfully.\r\n"), 10);
     } else {
-        HAL_USART_Transmit(&husart2, (uint8_t *) "Logger termination had errors.\r\n",
-                          strlen("Logger termination had errors.\r\n"), 10);
+        HAL_USART_Transmit(&husart2, (uint8_t *) "Logger termination had errors.\r\n",strlen("Logger termination had errors.\r\n"), 10);
     }
 
     return success;
@@ -176,25 +174,24 @@ void logMessage(char *data, bool critical) {
  * @param format printf-style format string for the message content
  * @param ... Variable arguments for the format string
  */
-
 void vFormattedLog(const char *Log_Level, const char *format, ...) {
     if (LOGGING_INITIALIZED) {
-
-        char buffer[LOG_MSG_LEN];
         log_message_t msg;
 
         // All the additional arguments used in the log will be handled by this block of code.
         va_list args;
         va_start(args, format);
-        vsnprintf(buffer, sizeof(buffer), format, args);
+        // Print the log level first
+        int prefix_length = snprintf(msg.message,sizeof(msg.message),"[%s] ",Log_Level);
+        // Print the desired message into the string
+        vsnprintf(msg.message + prefix_length, sizeof(msg.message)- prefix_length, format, args);
         va_end(args);
 
-        // Put the log level in front of the message
-        snprintf(msg.message, sizeof(msg.message), "[%s] %s", Log_Level, buffer);
+        // Null terminate
         msg.message[sizeof(msg.message) - 1] = '\0';
-        msg.header = 0x00; //TODO: This will be used in a future External application that will read the messages to an external computer.
 
-        if (xQueueSend(xLogQueue, &msg, pdMS_TO_TICKS(10)) != pdPASS) {
+        // Send to the queue
+        if (xQueueSend(xLogQueue, &msg, DELAY) != pdPASS) {
             HAL_USART_Transmit(&husart2, (uint8_t *)"[WARN] Log queue full! Message Dropped\r\n", strlen("[WARN] Log queue full! Message Dropped\r\n"), 100);
         }
     }
@@ -212,16 +209,15 @@ void vUSARTLoggerTask(void *pvParameters) {
     log_message_t msg;
     LOGINFO("USART message system booted!");
     for (;;) {
-        if (xQueueReceive(xLogQueue, &msg, pdMS_TO_TICKS(25)) == pdPASS) {
-            // You can use HAL_UART_Transmit or any USART API here
-            char buffer[130];
+        if (xQueueReceive(xLogQueue, &msg, DELAY) == pdPASS) {
+            // An additional 3 bytes are needed to be allocated here to allow for the buffer to have enough space for \r\n\0
+            char buffer[LOG_MSG_LEN+3];
             snprintf(buffer, sizeof(buffer), "%s\r\n", msg.message);
             HAL_USART_Transmit(&husart2, (uint8_t *)buffer, strlen(buffer), 25);
         }else{
         	osThreadYield();
         }
         osDelay(DELAY);
-        taskYIELD();
     }
 }
 

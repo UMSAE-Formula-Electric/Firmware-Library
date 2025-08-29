@@ -12,7 +12,7 @@
 #include <stdarg.h>
 
 //	Configuration definitions
-#define LOG_MSG_LEN 256
+#define LOG_MSG_LEN 128
 #define LOG_QUEUE_LENGTH 16
 #define LOG_ENABLE_METADATA 0
 #define LIBRARY_LOG_LEVEL LOG_DEBUG
@@ -43,10 +43,10 @@ typedef enum{
  * function.
  *
  * @note The default definition of this macro generates logging via a printf-like
- * vLoggingPrintf function.
+ * vFormattedLog function.
  */
 #ifndef SdkLog
-    #define SdkLog( message )   vLoggerEnqueuePrintf(message)
+    #define SdkLog( message )   vFormatedLog("ALWAYS",message)
 #endif
 
 /**
@@ -164,20 +164,8 @@ typedef enum {
 } INDICATOR;
 
 typedef struct {
-    uint8_t header;  // Level:bits[7-6], Task:bits[5-2], State:bits[1-0]
-    char message[128];
+    char message[LOG_MSG_LEN];
 } log_message_t;
-
-
-// Debug message structure
-typedef struct {
-	uint8_t start;
-    uint8_t header;         // Packed 2-4-2 bit fields
-    char message[256];      // Null-terminated string
-    uint8_t checksum;
-    uint8_t end;
-} DebugMessage_t;
-
 
 //Sensor-Related
 
