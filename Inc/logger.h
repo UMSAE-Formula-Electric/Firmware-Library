@@ -1,11 +1,108 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#define VCU_LOG_MSG_LEN 32
-
+#include "FreeRTOS.h"
+#include "cmsis_os.h"
+#include "queue.h"
+#include "task.h"
+#include "semphr.h"
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdarg.h>
 
-extern char SD_ERROR_STATE;
+//	Configuration definitions
+#define LOG_MSG_LEN 128
+#define LOG_QUEUE_LENGTH 16
+#define LOG_ENABLE_METADATA 0
+#define LIBRARY_LOG_LEVEL LOG_DEBUG
+#define LOGGING_TASK_ENABLED 1
+
+typedef enum{
+	LOG_NONE  = 0,
+	LOG_ERROR,
+	LOG_WARN,
+	LOG_INFO,
+	LOG_DEBUG
+}LogLevel_t;
+
+
+/* Metadata information to prepend to every log message. */
+//TODO Messages were not compiling with all the nested string formats happening. Will need to refactor code to include Task name and time when fucntion was being run.
+#if LOG_ENABLE_METADATA
+    #define LOG_METADATA_FORMAT  "[%s:%d][%s] "
+    #define LOG_METADATA_ARGS    __FUNCTION__, __LINE__, pcTaskGetName(NULL)
+#else
+    #define LOG_METADATA_FORMAT  ""
+    #define LOG_METADATA_ARGS
+#endif
+
+/**
+ * @brief Common macro that maps all the logging interfaces,
+ * (#LOGDEBUG, #LOGINFO, #LOGWARN, #LOGERROR) to the platform-specific logging
+ * function.
+ *
+ * @note The default definition of this macro generates logging via a printf-like
+ * vFormattedLog function.
+ */
+#ifndef SdkLog
+    #define SdkLog( message )   vFormatedLog("ALWAYS",message)
+#endif
+
+/**
+ * Disable definition of logging interface macros when generating doxygen output,
+ * to avoid conflict with documentation of macros at the end of the file.
+ */
+/* Check that LIBRARY_LOG_LEVEL is defined and has a valid value. */
+#if !defined( LIBRARY_LOG_LEVEL ) ||       \
+    ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && \
+    ( LIBRARY_LOG_LEVEL != LOG_ERROR ) &&  \
+    ( LIBRARY_LOG_LEVEL != LOG_WARN ) &&   \
+    ( LIBRARY_LOG_LEVEL != LOG_INFO ) &&   \
+    ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) )
+    #error "Please define LIBRARY_LOG_LEVEL as either LOG_NONE, LOG_ERROR, LOG_WARN, LOG_INFO, or LOG_DEBUG."
+#else
+    #if LIBRARY_LOG_LEVEL == LOG_DEBUG
+        /* All log level messages will logged. */
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO(message, ...) vFormattedLog("INFO", message, ##__VA_ARGS__)
+		#define LOGDEBUG(message, ...) vFormattedLog("DEBUG", message, ##__VA_ARGS__)
+    #elif LIBRARY_LOG_LEVEL == LOG_INFO
+        /* Only INFO, WARNING, ERROR, and ALWAYS messages will be logged. */
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO(message, ...) vFormattedLog("INFO", message, ##__VA_ARGS__)
+		#define LOGDEBUG( message )
+
+    #elif LIBRARY_LOG_LEVEL == LOG_WARN
+        /* Only WARNING, ERROR, and ALWAYS messages will be logged. */
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN(message, ...) vFormattedLog("WARN", message "\r\n", ##__VA_ARGS__)
+		#define LOGINFO( message )
+        #define LOGDEBUG( message )
+
+    #elif LIBRARY_LOG_LEVEL == LOG_ERROR
+        /* Only ERROR and ALWAYS messages will be logged. */
+		#define LOGALWAYS(message, ...) vFormattedLog("ALWAYS", message, ##__VA_ARGS__)
+		#define LOGERROR(message, ...) vFormattedLog("ERROR", message, ##__VA_ARGS__)
+		#define LOGWARN( message )
+        #define LOGINFO( message )
+        #define LOGDEBUG( message )
+
+    #else /* if LIBRARY_LOG_LEVEL == LOG_NONE */
+
+        #define LOGALWAYS( message )
+        #define LOGERROR( message )
+        #define LOGWARN( message )
+        #define LOGINFO( message )
+        #define LOGDEBUG( message )
+
+    #endif /* if LIBRARY_LOG_LEVEL == LOG_NONE */
+#endif /* if !defined( LIBRARY_LOG_LEVEL ) || ( ( LIBRARY_LOG_LEVEL != LOG_NONE ) && ( LIBRARY_LOG_LEVEL != LOG_ERROR ) && ( LIBRARY_LOG_LEVEL != LOG_WARN ) && ( LIBRARY_LOG_LEVEL != LOG_INFO ) && ( LIBRARY_LOG_LEVEL != LOG_DEBUG ) ) */
 
 /*	Typedef'd enumerator for sensors
 *		Final value, NUM_OF_SENSORS returns total number of sensors
@@ -66,11 +163,12 @@ typedef enum {
 	NUM_OF_INDICATORS			// 07
 } INDICATOR;
 
+typedef struct {
+    char message[LOG_MSG_LEN];
+} log_message_t;
 
 //Sensor-Related
-extern float data_sensors[NUM_OF_SENSORS];
-extern char *data_ids_sd[NUM_OF_SENSORS+1];
-extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
+
 
 /**
  * BT ERROR STATES:
@@ -79,7 +177,6 @@ extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
  * 0x01: Failed to Create BT RTOS Task for Dumping
  * 0x02: Invalid Data Entry Type
  **/
-
 extern char BT_ERROR_STATE;
 
 /**
@@ -96,11 +193,21 @@ extern char BT_ERROR_STATE;
  * 0x08: Failed to Get Free Space Available
  * 0x09: Not Enough Free Space Available
  **/
+extern char SD_ERROR_STATE;
 
-bool logInitialize();
-bool logTerminate();
+// Global Variables
+extern QueueHandle_t xLogQueue;
+extern osThreadId_t loggerTaskHandle;
+extern bool LOGGING_INITIALIZED;
+extern float data_sensors[NUM_OF_SENSORS];
+extern char *data_ids_bt[NUM_OF_SENSORS+NUM_OF_INDICATORS];
+
+// Function prototypes
+bool logInitialize(void);
+bool logTerminate(void);
+void vUSARTLoggerTask(void *pvParameters);
+void vFormattedLog(const char *Log_Level, const char *format, ...);
 void logMessage(char *data, bool critical);
-
 void enableVCULogging();
 void nullTerminate(char *str);
 
