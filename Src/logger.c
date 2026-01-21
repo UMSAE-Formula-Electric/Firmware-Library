@@ -147,7 +147,7 @@ void enableVCULogging() {
  * Ensures the string is null-terminated within LOG_MSG_LEN
  * Assumes str points to a writable buffer of at least LOG_MSG_LEN
 */
-void nullTerminate(char *str) {
+int nullTerminate(char *str) {
     if (str == NULL) return -1;
 
     for (size_t i = 0; i < LOG_MSG_LEN; i++) { 
