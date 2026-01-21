@@ -143,12 +143,21 @@ void enableVCULogging() {
 	VCU_loggingReady = 1;
 }
 
+/*
+ * Ensures the string is null-terminated within LOG_MSG_LEN
+ * Assumes str points to a writable buffer of at least LOG_MSG_LEN
+*/
 void nullTerminate(char *str) {
-    size_t length = strlen(str);
-    uint8_t isNullTerminated = str[length - 1] != '\0';
-    if (isNullTerminated == 0) {
-        str[length] = '\0';
+    if (str == NULL) return -1;
+
+    for (size_t i = 0; i < LOG_MSG_LEN; i++) { 
+        if (str[i] == '\0') {
+            return 0; 
+        }
     }
+    // Forces a null-terminating char
+    str[LOG_MSG_LEN - 1] = '\0';
+    return 1; 
 }
 
 
