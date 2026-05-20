@@ -209,6 +209,6 @@ void vUSARTLoggerTask(void *pvParameters);
 void vFormattedLog(const char *Log_Level, const char *format, ...);
 void logMessage(char *data, bool critical);
 void enableVCULogging();
-void nullTerminate(char *str);
+int nullTerminate(char *str);
 
 #endif
