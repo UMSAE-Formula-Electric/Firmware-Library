@@ -1,4 +1,8 @@
-
+/*
+ * Created on May 22, 2026
+ * Created by Cedric Caparas
+ *
+ */
 
 #ifndef _MOTOR_CONTROLLER_CAN_H
 #define _MOTOR_CONTROLLER_CAN_H
@@ -18,12 +22,14 @@
 #define MC_COMMAND_READ 	0
 #define MC_COMMAND_WRITE 	1
 
-#define MC_COMMAND_MSG			 0x0C0
-#define MC_PARAM_COMMAND_MSG	 0x0C1
-
 #define MC_ENABLE_BYTE_4 		 0b11100101
 #define MC_ENABLE_BYTE_5		 0b00000000
 
+//TX: Messages sent to the Motor Controller
+#define MC_COMMAND_MSG			 0x0C0
+#define MC_PARAM_COMMAND_MSG	 0x0C1
+
+//RX: Messages sent from the Motor Controller
 #define CAN_MC_RX_TEMP1_ID					0x0A0
 #define CAN_MC_RX_TEMP2_ID					0x0A1
 #define CAN_MC_RX_TEMP3_ID					0x0A2
@@ -32,15 +38,19 @@
 #define CAN_MC_RX_MOTOR_ID					0x0A5
 #define CAN_MC_RX_CURRENT_ID				0x0A6
 #define CAN_MC_RX_VOLT_ID					0x0A7
-#define CAN_MC_RX_FAULT_ID					0x0AB
+#define CAN_MC_RX_FLUX_ID					0x0A8
 #define CAN_MC_RX_INTERNAL_VOLTAGES 		0x0A9
 #define CAN_MC_RX_INTERNAL_STATES			0x0AA
+#define CAN_MC_RX_FAULT_ID					0x0AB
 #define CAN_MC_RX_TORQUE_TIMER_INFO			0x0AC
 #define CAN_MC_RX_MODULATION_INDEX			0x0AD
 #define CAN_MC_RX_FIRMWARE_INFO				0x0AE
 #define CAN_MC_RX_DIAGNOSTIC_DATA			0x0AF
 #define CAN_MC_RX_HIGHSPEED					0x0B0
 #define CAN_MC_RX_TORQUE_CAPABILITY			0x0B1
+#define CAN_MC_RX_READ_WRITE_PARAM			0x0C2
+#define CAN_MC_RX_U2C_COMMAND				0x1D7
+#define CAN_MC_RX_INV_DIAG_BUFFER			0x80000BA5
 
 #define PEAK_TORQUE			230	//Peak torque for EMRAX 228 motor
 

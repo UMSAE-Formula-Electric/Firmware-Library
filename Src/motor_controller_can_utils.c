@@ -1,6 +1,6 @@
 /*
- * Created on Jan 14 2019
- * Created by Martin Rickey
+ * Created on May 23, 2026
+ * Created by Cedric Caparas
  *
  */
 
@@ -166,7 +166,8 @@ _Bool isMcCanId(uint16_t canId){
         (canId == CAN_MC_RX_MOTOR_ID) || (canId == CAN_MC_RX_CURRENT_ID) || (canId == CAN_MC_RX_VOLT_ID) ||
         (canId == CAN_MC_RX_FAULT_ID) || (canId == CAN_MC_RX_INTERNAL_VOLTAGES) || (canId == CAN_MC_RX_INTERNAL_STATES) ||
         (canId == CAN_MC_RX_TORQUE_TIMER_INFO) || (canId == CAN_MC_RX_MODULATION_INDEX) || (canId == CAN_MC_RX_FIRMWARE_INFO) ||
-        (canId == CAN_MC_RX_DIAGNOSTIC_DATA) || (canId == CAN_MC_RX_TORQUE_CAPABILITY) || (canId == CAN_MC_RX_TEMP3_ID);
+        (canId == CAN_MC_RX_DIAGNOSTIC_DATA) || (canId == CAN_MC_RX_TORQUE_CAPABILITY) || (canId == CAN_MC_RX_TEMP3_ID) ||
+        (canId == CAN_MC_RX_FLUX_ID) || (canId == CAN_MC_RX_READ_WRITE_PARAM) || (canId == CAN_MC_RX_U2C_COMMAND);
 }
 
 /*
@@ -743,8 +744,14 @@ void mc_process_torque_timer_info_can(uint8_t * data){
      * 2,3      Torque Feedback Torque  The estimated motor torque based on motor parameters and feedback
      * 4,5,6,7  Power on Timer  (Counts x .003)sec  this timer is updated every 3 msec. This timer will roll-over in approximately 5 months. The timer will reset to 0 to show when a reset of the processor has occurred.
      */
+
+    // Bytes 0 (LSB) and 1 (MSB)
     mc_torque_command = (int16_t )((data[1] << 8) | data[0]);
-    mc_torque_feedback = (int16_t )((data[3] << 8)| data[4]);
+
+    // Bytes 2 (LSB) and 3 (MSB)
+    mc_torque_feedback = (int16_t )((data[3] << 8) | data[2]);
+
+    // Bytes 4 (LSB), 5, 6, and 7 (MSB)
     mc_power_on_timer = (int32_t)((data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4]);
 }
 
