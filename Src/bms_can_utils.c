@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "semphr.h"
 
+
 /** Interface for the 2022 EMUS G1 BMS.
  * 	Contains information on voltages, temperature,
  * 	statuses, and diagnostic messages
@@ -126,6 +127,124 @@ void init_bms(void){
 
 }
 
+/**
+ * @brief Processes incoming BMS CAN messages.
+ * @details
+ * Routes Battery Management System (BMS) CAN frames to the
+ * appropriate packet parser or handler based on the received
+ * CAN identifier.
+ *
+ * Supported message types include:
+ * - Overall system status
+ * - Diagnostic information
+ * - Voltage telemetry
+ * - Temperature telemetry
+ * - Cell balancing information
+ * - State of charge data
+ * - Contactor control status
+ * - Energy parameters
+ * - Statistical data
+ * - Event and fault reporting
+ *
+ * Frames with unsupported CAN IDs are ignored.
+ *
+ * @param[in] canID Received CAN message identifier.
+ * @param[in] data  Pointer to the 8-byte CAN payload buffer.
+ */
+void BMS_Process(uint32_t canID, const uint8_t data[8])
+{
+    if (data == NULL) return;
+
+    // ----------------------------
+    // OVERALL STATUS FRAME
+    // ----------------------------
+    if (canID == CAN_BMS_OVERALL_ID)
+    {
+        process_bms_overall_packet((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // DIAGNOSTIC FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_DIAGNOSTIC_ID)
+    {
+        process_bms_diagnostic_packet((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // VOLTAGE FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_VOLTAGE_ID)
+    {
+        process_bms_voltage_packet((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // MODULE TEMPERATURE FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_MODULE_TEMPERATURE)
+    {
+        process_bms_module_temp_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // CELL TEMPERATURE FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_CELL_TEMPERATURE)
+    {
+        process_bms_temp_packet((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // CELL BALANCING RATE FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_CELL_BALANCING_RATE)
+    {
+        process_bms_cell_temp_balancing_rate_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // STATE OF CHARGE FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_STATE_OF_CHARGE)
+    {
+        process_bms_state_of_charge_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // CONTACTOR CONTROL FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_CONTACTOR_CONTROL)
+    {
+        process_bms_contactor_control_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // ENERGY PARAMETERS FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_ENERGY_PARAM)
+    {
+        process_bms_energy_param_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // STATISTICS FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_STATS)
+    {
+        process_bms_stats_can((uint8_t *)data);
+    }
+
+    // ----------------------------
+    // EVENTS FRAME
+    // ----------------------------
+    else if (canID == CAN_BMS_EVENTS)
+    {
+        process_bms_events_can((uint8_t *)data);
+    }
+
+}
+
 _Bool isBmsCanId(uint32_t canID)
 {
 	return ((canID == CAN_BMS_OVERALL_ID) || (canID == CAN_BMS_DIAGNOSTIC_ID) || (canID == CAN_BMS_VOLTAGE_ID)
@@ -143,74 +262,78 @@ _Bool isBmsCanId(uint32_t canID)
 }
 
 // This function processes Type A and B CAN frames
-void process_typeA_and_typeB_can_packets(CAN_RxPacketTypeDef * packetToProcess) {
-	uint32_t canID = packetToProcess->rxPacketHeader.StdId; // Standard ID from the CAN frame
-	uint8_t* canData = packetToProcess->rxPacketData; // 8 byte array from the CAN frame
-	uint8_t dataLength = packetToProcess->rxPacketHeader.DLC; // if the data from the can frame isn't full, use this to check num of cells
-	uint8_t cellGroupNum; // will be initialized to a group value if the CAN ID is in a valid range to have a group number
+// This function now uses the abstracted can_frame_t instead of CAN_RxPacketTypeDef
+void process_typeA_and_typeB_can_packets(can_frame_t *frame) {
+    if (frame == NULL) return;
 
-	// Individual Cell Voltages - Type A
-	// range from 48 (CAN_BMS_BASE_ID + 32) to the max number of cell groups (CAN_BMS_BASE_ID + 32 + MAX_NUM_CELL_GROUPS) (we have 34 cell groups for ePBR24)
-	if (((CAN_BMS_BASE_ID + 32) <= canID) && (canID <= (CAN_BMS_BASE_ID + 32 + MAX_NUM_CELL_GROUPS))) {
-		cellGroupNum = canID - CAN_BMS_BASE_ID - 32;
+    uint32_t canID = frame->id;       // Extracted from our generic frame
+    const uint8_t* canData = frame->data; // Pointer to the 8-byte data array
+    uint8_t dataLength = frame->dlc;  // Data Length Code[cite: 1]
+    uint8_t cellGroupNum;
 
-		clear_8_byte_array(cellVoltages);
-		fill_8_byte_array_typeA(cellVoltages, canData, dataLength);
+    // Individual Cell Voltages - Type A
+    if (((CAN_BMS_BASE_ID + 32) <= canID) && (canID <= (CAN_BMS_BASE_ID + 32 + MAX_NUM_CELL_GROUPS))) {
+        cellGroupNum = canID - CAN_BMS_BASE_ID - 32;
 
-	}
+        clear_8_byte_array(cellVoltages);
+        fill_8_byte_array_typeA(cellVoltages, canData, dataLength);
+    }
 
-	// Individual Cell Voltages - Type B
-	if (canID == CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B) {
-		cellGroupNum = canData[0]; // the group number is the first byte of the CAN frame data
-		// dataLength ranges from 2-8 (because data0, or dataLength of 1, contains the group number)
+    // Individual Cell Voltages - Type B
+    else if (canID == CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B) {
+        cellGroupNum = canData[0]; // group number is the first byte[cite: 1]
 
-		clear_8_byte_array(cellVoltages);
-		fill_8_byte_array_typeB(cellVoltages, canData, dataLength);
-	}
+        clear_8_byte_array(cellVoltages);
+        fill_8_byte_array_typeB(cellVoltages, canData, dataLength);
+    }
 
-	// Individual Cell Module Temps - Type A
-	if (((CAN_BMS_BASE_ID + 64) <= canID) && (canID <= (CAN_BMS_BASE_ID + 64 + MAX_NUM_CELL_GROUPS))) {
-		cellGroupNum = canID - CAN_BMS_BASE_ID - 64;
+    // Individual Cell Module Temps - Type A
+    else if (((CAN_BMS_BASE_ID + 64) <= canID) && (canID <= (CAN_BMS_BASE_ID + 64 + MAX_NUM_CELL_GROUPS))) {
+        cellGroupNum = canID - CAN_BMS_BASE_ID - 64;
 
-		clear_8_byte_array(cellModuleTemps);
-		fill_8_byte_array_typeA(cellModuleTemps, canData, dataLength);
-	}
-	// Individual Cell Module Temps - Type B
-	if (canID == CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B) {
-		cellGroupNum = canData[0];
+        clear_8_byte_array(cellModuleTemps);
+        fill_8_byte_array_typeA(cellModuleTemps, canData, dataLength);
+    }
 
-		clear_8_byte_array(cellModuleTemps);
-		fill_8_byte_array_typeB(cellModuleTemps, canData, dataLength);
+    // Individual Cell Module Temps - Type B
+    else if (canID == CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B) {
+        cellGroupNum = canData[0];
 
-	}
-	// Individual Cell Temps - Type A
-	if (((CAN_BMS_BASE_ID + 256) <= canID) && (canID <= (CAN_BMS_BASE_ID + 256 + MAX_NUM_CELL_GROUPS))) {
-		cellGroupNum = canID - CAN_BMS_BASE_ID - 256;
+        clear_8_byte_array(cellModuleTemps);
+        fill_8_byte_array_typeB(cellModuleTemps, canData, dataLength);
+    }
 
-		clear_8_byte_array(cellTemps);
-		fill_8_byte_array_typeA(cellTemps, canData, dataLength);
-	}
-	// Individual Cell Temps - Type B
-	if (canID == CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B) {
-		cellGroupNum = canData[0];
+    // Individual Cell Temps - Type A
+    else if (((CAN_BMS_BASE_ID + 256) <= canID) && (canID <= (CAN_BMS_BASE_ID + 256 + MAX_NUM_CELL_GROUPS))) {
+        cellGroupNum = canID - CAN_BMS_BASE_ID - 256;
 
-		clear_8_byte_array(cellTemps);
-		fill_8_byte_array_typeB(cellTemps, canData, dataLength);
-	}
-	// Individual Cell Balancing Rate - Type A
-	if (((CAN_BMS_BASE_ID + 96) <= canID) && (canID <= (CAN_BMS_BASE_ID + 96 + MAX_NUM_CELL_GROUPS))) {
-		cellGroupNum = canID - CAN_BMS_BASE_ID - 96;
+        clear_8_byte_array(cellTemps);
+        fill_8_byte_array_typeA(cellTemps, canData, dataLength);
+    }
 
-		clear_8_byte_array(cellBalancingRate);
-		fill_8_byte_array_typeA(cellBalancingRate, canData, dataLength);
-	}
-	// Individual Cell Balancing Rate - Type B
-	if (canID == CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B) {
-		cellGroupNum = canData[0];
+    // Individual Cell Temps - Type B
+    else if (canID == CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B) {
+        cellGroupNum = canData[0];
 
-		clear_8_byte_array(cellBalancingRate);
-		fill_8_byte_array_typeB(cellBalancingRate, canData, dataLength);
-	}
+        clear_8_byte_array(cellTemps);
+        fill_8_byte_array_typeB(cellTemps, canData, dataLength);
+    }
+
+    // Individual Cell Balancing Rate - Type A
+    else if (((CAN_BMS_BASE_ID + 96) <= canID) && (canID <= (CAN_BMS_BASE_ID + 96 + MAX_NUM_CELL_GROUPS))) {
+        cellGroupNum = canID - CAN_BMS_BASE_ID - 96;
+
+        clear_8_byte_array(cellBalancingRate);
+        fill_8_byte_array_typeA(cellBalancingRate, canData, dataLength);
+    }
+
+    // Individual Cell Balancing Rate - Type B
+    else if (canID == CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B) {
+        cellGroupNum = canData[0];
+
+        clear_8_byte_array(cellBalancingRate);
+        fill_8_byte_array_typeB(cellBalancingRate, canData, dataLength);
+    }
 }
 
 /**
@@ -497,115 +620,115 @@ void process_bms_events_can(uint8_t * Data) {
 		{
 		case NO_EVENT:
 			// No event, so no action needed
-			break;
-		case BMS_STARTED:
-			logMessage("The BMS has started.", true);
-			break;
-		case LOST_COMM_TO_CELLS:
-			logMessage("Lost communication to the cells.", true);
-			break;
-		case ESTABLISH_COMM_TO_CELLS:
-			logMessage("", true);
-			break;
-		case CELL_VOLT_CRIT_LOW:
-			logMessage("Cell voltage is CRITICALLY LOW.", true);
-			break;
-		case CRIT_LOW_VOLTAGE_RECOVERED:
-			logMessage("Critically low voltage recovered.", true);
-			break;
-		case CELL_VOLT_CRIT_HIGH:
-			logMessage("Cell voltage is CRITICALLY HIGH.", true);
-			break;
-		case CRIT_HIGH_VOLTAGE_RECOVERED:
-			logMessage("Critically high voltage recovered.", true);
-			break;
-		case DISCHARGE_CURR_CRIT_HIGH:
-			logMessage("Discharge current is CRITICALLY HIGH.", true);
-			break;
-		case DISCHARGE_CRIT_HIGH_CURR_RECOVERED:
-			logMessage("Critically high discharge current recovered.", true);
-			break;
-		case CHARGE_CURR_CRIT_HIGH:
-			logMessage("Charge current CRITICALLY HIGH.", true);
-			break;
-		case CHARGE_CRIT_HIGH_CURR_RECOVERED:
-			logMessage("Critically high charge current recovered.", true);
-			break;
-		case CELL_MODULE_TEMP_CRIT_HIGH:
-			logMessage("Cell module temperature CRITICALLY HIGH.", true);
-			break;
-		case CRIT_HIGH_CELL_MODULE_TEMP_RECOVERED:
-			logMessage("Critically high cell module temperature recovered.", true);
-			break;
-		case LEAKAGE_DETECTED:
-			logMessage("Leakage detected.", true);
-			break;
-		case LEAKAGE_RECOVERED:
-			logMessage("Leakage recovered.", true);
-			break;
-		case LOW_VOLT_REDUCING_POWER_WARNING:
-			logMessage("Low voltage reducing power WARNING.", true);
-			break;
-		case POWER_REDUCTION_FROM_LOW_VOLT_RECOVERED:
-			logMessage("Power reduction from low voltage recovered.", true);
-			break;
-		case HIGH_CURR_REDUCING_POWER_WARNING:
-			logMessage("High current reducing power WARNING.", true);
-			break;
-		case POWER_REDUCTION_FROM_HIGH_CURR_RECOVERED:
-			logMessage("Power reduction from high current recovered.", true);
-			break;
-		case HIGH_CELL_MODULE_TEMP_REDUCING_POWER_WARNING:
-			logMessage("High cell module temperature reducting power WARNING.", true);
-			break;
-		case POWER_REDUCTION_FROM_HIGH_CELL_MODULE_TEMP_RECOVERED:
-			logMessage("Power reduction from high cell module temperature recovered.", true);
-			break;
-		case CHARGER_CONNECTED:
-			logMessage("Charger connected.", true);
-			break;
-		case CHARGER_DISCONNECTED:
-			logMessage("Charger disconnected.", true);
-			break;
-		case STARTED_PREHEAT_STAGE:
-			logMessage("Started the preheat stage.", true);
-			break;
-		case STARTED_PRECHARGE_STAGE:
-			logMessage("Started teh precharge stage.", true);
-			break;
-		case STARTED_MAIN_CHARGING_STAGE:
-			logMessage("Started main charging stage.", true);
-			break;
-		case STARTED_BALANCING_STAGE:
-			logMessage("Started balancing stage.", true);
-			break;
-		case CHARGING_FINISHED:
-			logMessage("Charging finished.", true);
-			break;
-		case CHARGING_ERROR_OCCURRED:
-			logMessage("Charging error occurred", true);
-			break;
-		case RETRYING_CHARGING:
-			logMessage("Retrying charging.", true);
-			break;
-		case RESTARTING_CHARGING:
-			logMessage("Restarting charging.", true);
-			break;
-		case CELL_TEMP_CRIT_HIGH:
-			logMessage("Cell temperature CRITICALLY HIGH.", true);
-			break;
-		case CRIT_HIGH_CELL_TEMP_RECOVERED:
-			logMessage("Critically high cell temperature recovered.", true);
-			break;
-		case HIGH_CELL_TEMP_REDUCING_POWER_WARNING:
-			logMessage("High cell temperature reducing power WARNING.", true);
-			break;
-		case POWER_REDUCTION_FROM_HIGH_CELL_TEMP_RECOVERED:
-			logMessage("Power reduction from high cell temperature recovered.", true);
-			break;
-		default:
-			logMessage("Default case reached.", true);
-			break;
+//			break;
+//		case BMS_STARTED:
+//			logMessage("The BMS has started.", true);
+//			break;
+//		case LOST_COMM_TO_CELLS:
+//			logMessage("Lost communication to the cells.", true);
+//			break;
+//		case ESTABLISH_COMM_TO_CELLS:
+//			logMessage("", true);
+//			break;
+//		case CELL_VOLT_CRIT_LOW:
+//			logMessage("Cell voltage is CRITICALLY LOW.", true);
+//			break;
+//		case CRIT_LOW_VOLTAGE_RECOVERED:
+//			logMessage("Critically low voltage recovered.", true);
+//			break;
+//		case CELL_VOLT_CRIT_HIGH:
+//			logMessage("Cell voltage is CRITICALLY HIGH.", true);
+//			break;
+//		case CRIT_HIGH_VOLTAGE_RECOVERED:
+//			logMessage("Critically high voltage recovered.", true);
+//			break;
+//		case DISCHARGE_CURR_CRIT_HIGH:
+//			logMessage("Discharge current is CRITICALLY HIGH.", true);
+//			break;
+//		case DISCHARGE_CRIT_HIGH_CURR_RECOVERED:
+//			logMessage("Critically high discharge current recovered.", true);
+//			break;
+//		case CHARGE_CURR_CRIT_HIGH:
+//			logMessage("Charge current CRITICALLY HIGH.", true);
+//			break;
+//		case CHARGE_CRIT_HIGH_CURR_RECOVERED:
+//			logMessage("Critically high charge current recovered.", true);
+//			break;
+//		case CELL_MODULE_TEMP_CRIT_HIGH:
+//			logMessage("Cell module temperature CRITICALLY HIGH.", true);
+//			break;
+//		case CRIT_HIGH_CELL_MODULE_TEMP_RECOVERED:
+//			logMessage("Critically high cell module temperature recovered.", true);
+//			break;
+//		case LEAKAGE_DETECTED:
+//			logMessage("Leakage detected.", true);
+//			break;
+//		case LEAKAGE_RECOVERED:
+//			logMessage("Leakage recovered.", true);
+//			break;
+//		case LOW_VOLT_REDUCING_POWER_WARNING:
+//			logMessage("Low voltage reducing power WARNING.", true);
+//			break;
+//		case POWER_REDUCTION_FROM_LOW_VOLT_RECOVERED:
+//			logMessage("Power reduction from low voltage recovered.", true);
+//			break;
+//		case HIGH_CURR_REDUCING_POWER_WARNING:
+//			logMessage("High current reducing power WARNING.", true);
+//			break;
+//		case POWER_REDUCTION_FROM_HIGH_CURR_RECOVERED:
+//			logMessage("Power reduction from high current recovered.", true);
+//			break;
+//		case HIGH_CELL_MODULE_TEMP_REDUCING_POWER_WARNING:
+//			logMessage("High cell module temperature reducting power WARNING.", true);
+//			break;
+//		case POWER_REDUCTION_FROM_HIGH_CELL_MODULE_TEMP_RECOVERED:
+//			logMessage("Power reduction from high cell module temperature recovered.", true);
+//			break;
+//		case CHARGER_CONNECTED:
+//			logMessage("Charger connected.", true);
+//			break;
+//		case CHARGER_DISCONNECTED:
+//			logMessage("Charger disconnected.", true);
+//			break;
+//		case STARTED_PREHEAT_STAGE:
+//			logMessage("Started the preheat stage.", true);
+//			break;
+//		case STARTED_PRECHARGE_STAGE:
+//			logMessage("Started teh precharge stage.", true);
+//			break;
+//		case STARTED_MAIN_CHARGING_STAGE:
+//			logMessage("Started main charging stage.", true);
+//			break;
+//		case STARTED_BALANCING_STAGE:
+//			logMessage("Started balancing stage.", true);
+//			break;
+//		case CHARGING_FINISHED:
+//			logMessage("Charging finished.", true);
+//			break;
+//		case CHARGING_ERROR_OCCURRED:
+//			logMessage("Charging error occurred", true);
+//			break;
+//		case RETRYING_CHARGING:
+//			logMessage("Retrying charging.", true);
+//			break;
+//		case RESTARTING_CHARGING:
+//			logMessage("Restarting charging.", true);
+//			break;
+//		case CELL_TEMP_CRIT_HIGH:
+//			logMessage("Cell temperature CRITICALLY HIGH.", true);
+//			break;
+//		case CRIT_HIGH_CELL_TEMP_RECOVERED:
+//			logMessage("Critically high cell temperature recovered.", true);
+//			break;
+//		case HIGH_CELL_TEMP_REDUCING_POWER_WARNING:
+//			logMessage("High cell temperature reducing power WARNING.", true);
+//			break;
+//		case POWER_REDUCTION_FROM_HIGH_CELL_TEMP_RECOVERED:
+//			logMessage("Power reduction from high cell temperature recovered.", true);
+//			break;
+//		default:
+//			logMessage("Default case reached.", true);
+//			break;
 		}
 	}
 	else // Else we have an event timestamp
@@ -690,74 +813,74 @@ float bms_getAverageVoltage() {
  */
 
 void bms_handleChargingError(uint8_t cErrorByte){
-	switch(cErrorByte){
-	case 1:
-		logMessage("Cell communication lost at start of charging", true);
-		break;
-	case 2:
-		logMessage("No cell communication (non-can charging)", true);
-		break;
-	case 3:
-		logMessage("Charging stage timeout", true);
-		break;
-	case 4:
-		logMessage("No cell communication (non-can charging)", true);
-		break;
-	case 5:
-		logMessage("Cannot set cell balancing threshold", true);
-		break;
-	case 6:
-		logMessage("Cell or cell module temperature too high", true);
-		break;
-	case 7:
-		logMessage("Cell communication lost during pre-heating stage", true);
-		break;
-	case 8:
-		logMessage("Number of cells mismatch", true);
-		break;
-	case 9:
-		logMessage("Cell over-voltage", true);
-		break;
-	case 10:
-		logMessage("Cell protection event occurred, check diagnostic codes", true);
-		//Need to check diagnostic codes or handled already?
-		break;
-	default:
-		break;
-	}
+//	switch(cErrorByte){
+//	case 1:
+//		logMessage("Cell communication lost at start of charging", true);
+//		break;
+//	case 2:
+//		logMessage("No cell communication (non-can charging)", true);
+//		break;
+//	case 3:
+//		logMessage("Charging stage timeout", true);
+//		break;
+//	case 4:
+//		logMessage("No cell communication (non-can charging)", true);
+//		break;
+//	case 5:
+//		logMessage("Cannot set cell balancing threshold", true);
+//		break;
+//	case 6:
+//		logMessage("Cell or cell module temperature too high", true);
+//		break;
+//	case 7:
+//		logMessage("Cell communication lost during pre-heating stage", true);
+//		break;
+//	case 8:
+//		logMessage("Number of cells mismatch", true);
+//		break;
+//	case 9:
+//		logMessage("Cell over-voltage", true);
+//		break;
+//	case 10:
+//		logMessage("Cell protection event occurred, check diagnostic codes", true);
+//		//Need to check diagnostic codes or handled already?
+//		break;
+//	default:
+//		break;
+//	}
 }
 
 void bms_handleProtectionFlags(uint16_t Flags){
-	if (bms_checkBit16(Flags, 0)){
-		logMessage("Under-voltage – some cell is below critical minimum voltage.", true);
-	}
-	if (bms_checkBit16(Flags, 1)){
-		logMessage("Over-voltage – some cell is above critical maximum voltage.", true);
-	}
-	if (bms_checkBit16(Flags, 2)){
-		logMessage("Discharge Over-current – discharge current (negative current) exceeds the critical discharge current setting.", true);
-	}
-	if (bms_checkBit16(Flags, 3)){
-		logMessage("Charge Over-current – charge current (positive current) exceeds the critical charge current setting.", true);
-	}
-	if (bms_checkBit16(Flags, 4)){
-		logMessage("Cell Module Overheat – cell module temperature exceeds maximum critical temperature setting.", true);
-	}
-	if (bms_checkBit16(Flags, 5)){
-		logMessage("Leakage – leakage signal was detected on leakage input pin.", true);
-	}
-	if (bms_checkBit16(Flags, 6)){
-		logMessage("No Cell Communication – loss of communication to cells.", true);
-	}
-	if (bms_checkBit16(Flags, 11)){
-		logMessage("Cell Overheat – cell temperature exceeds maximum cell temperature threshold", true);
-	}
-	if (bms_checkBit16(Flags, 12)){
-		logMessage("No Current Sensor", true);
-	}
-	if (bms_checkBit16(Flags, 13)){
-		logMessage("Pack Under-Voltage", true);
-	}
+//	if (bms_checkBit16(Flags, 0)){
+//		logMessage("Under-voltage – some cell is below critical minimum voltage.", true);
+//	}
+//	if (bms_checkBit16(Flags, 1)){
+//		logMessage("Over-voltage – some cell is above critical maximum voltage.", true);
+//	}
+//	if (bms_checkBit16(Flags, 2)){
+//		logMessage("Discharge Over-current – discharge current (negative current) exceeds the critical discharge current setting.", true);
+//	}
+//	if (bms_checkBit16(Flags, 3)){
+//		logMessage("Charge Over-current – charge current (positive current) exceeds the critical charge current setting.", true);
+//	}
+//	if (bms_checkBit16(Flags, 4)){
+//		logMessage("Cell Module Overheat – cell module temperature exceeds maximum critical temperature setting.", true);
+//	}
+//	if (bms_checkBit16(Flags, 5)){
+//		logMessage("Leakage – leakage signal was detected on leakage input pin.", true);
+//	}
+//	if (bms_checkBit16(Flags, 6)){
+//		logMessage("No Cell Communication – loss of communication to cells.", true);
+//	}
+//	if (bms_checkBit16(Flags, 11)){
+//		logMessage("Cell Overheat – cell temperature exceeds maximum cell temperature threshold", true);
+//	}
+//	if (bms_checkBit16(Flags, 12)){
+//		logMessage("No Current Sensor", true);
+//	}
+//	if (bms_checkBit16(Flags, 13)){
+//		logMessage("Pack Under-Voltage", true);
+//	}
 }
 
 int bms_checkBit16(uint16_t bytes, int n){
@@ -808,147 +931,134 @@ void fill_8_byte_array_typeB(uint8_t * array, uint8_t * arrayOfCANData, uint8_t 
     }
 }
 
+/**
+ * @brief Helper to send a standard BMS request frame (8 bytes, DLC 8)
+ */
+static void bms_send_request(uint32_t id, uint8_t command_byte) {
+    uint8_t data[8] = {0};
+    data[0] = command_byte;
+
+    // Using the abstracted sendCan from can_utils.c
+    uint8_t status = sendCan(id, data, 8, 0, 0);
+
+    if (status != 0) {
+        logMessage("BMS: Failed to send request frame\r\n", false);
+    }
+}
+
 // Requests (using standard IDs)
-void bms_request_overall_parameters()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_OVERALL_ID, 0, 0);
+void bms_request_overall_parameters() {
+    bms_send_request(CAN_BMS_OVERALL_ID, 0x00);
 }
 
-void bms_request_diagnostic_codes()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_DIAGNOSTIC_ID, 0, 0);
+void bms_request_diagnostic_codes() {
+    bms_send_request(CAN_BMS_DIAGNOSTIC_ID, 0x00);
 }
 
-void bms_request_overall_battery_voltages()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_VOLTAGE_ID, 0, 0);
+void bms_request_overall_battery_voltages() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_VOLTAGE_ID, empty, 0, 0, 0);
 }
 
-void bms_request_overall_cell_module_temp()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_MODULE_TEMPERATURE, 0, 0);
+void bms_request_overall_cell_module_temp() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_MODULE_TEMPERATURE, empty, 0, 0, 0);
 }
 
-void bms_request_overall_cell_temp()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_CELL_TEMPERATURE, 0, 0);
+void bms_request_overall_cell_temp() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_CELL_TEMPERATURE, empty, 0, 0, 0);
 }
 
-void bms_request_overall_cell_balancing_rate()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_CELL_BALANCING_RATE, 0, 0);
+void bms_request_overall_cell_balancing_rate() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_CELL_BALANCING_RATE, empty, 0, 0, 0);
 }
 
-void bms_request_individual_cell_voltages_type_A(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_BASE_ID + 32 + groupNumber, 0, 0);
+void bms_request_individual_cell_voltages_type_A(uint8_t group, uint8_t cellStr) {
+    uint8_t data[1] = {cellStr};
+    sendCan(CAN_BMS_BASE_ID + 32 + group, data, 1, 0, 0);
 }
 
-void bms_request_individual_cell_voltages_type_B(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {groupNumber, cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 2, CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B, 0, 0);
+void bms_request_individual_cell_voltages_type_B(uint8_t group, uint8_t cellStr) {
+    uint8_t data[2] = {group, cellStr};
+    sendCan(CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B, data, 2, 0, 0);
 }
 
-void bms_request_individual_cell_module_temps_type_A(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_BASE_ID + 64 + groupNumber, 0, 0);
+void bms_request_individual_cell_module_temps_type_A(uint8_t group, uint8_t cellStr) {
+    uint8_t data[1] = {cellStr};
+    sendCan(CAN_BMS_BASE_ID + 64 + group, data, 1, 0, 0);
 }
 
-void bms_request_individual_cell_module_temps_type_B(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {groupNumber, cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 2, CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B, 0, 0);
+void bms_request_individual_cell_module_temps_type_B(uint8_t group, uint8_t cellStr) {
+    uint8_t data[2] = {group, cellStr};
+    sendCan(CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B, data, 2, 0, 0);
 }
 
-void bms_request_individual_cell_temps_type_A(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_BASE_ID + 256 + groupNumber, 0, 0);
+void bms_request_individual_cell_temps_type_A(uint8_t group, uint8_t cellStr) {
+    uint8_t data[1] = {cellStr};
+    sendCan(CAN_BMS_BASE_ID + 256 + group, data, 1, 0, 0);
 }
 
-void bms_request_individual_cell_temps_type_B(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {groupNumber, cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 2, CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B, 0, 0);
+void bms_request_individual_cell_temps_type_B(uint8_t group, uint8_t cellStr) {
+    uint8_t data[2] = {group, cellStr};
+    sendCan(CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B, data, 2, 0, 0);
 }
 
-void bms_request_individual_cell_balancing_rate_type_A(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_BASE_ID + 96 + groupNumber, 0, 0);
+void bms_request_individual_cell_balancing_rate_type_A(uint8_t group, uint8_t cellStr) {
+    uint8_t data[1] = {cellStr};
+    sendCan(CAN_BMS_BASE_ID + 96 + group, data, 1, 0, 0);
 }
 
-void bms_request_individual_cell_balancing_rate_type_B(uint8_t groupNumber, uint8_t cellStringNumber)
-{
-	uint8_t requestDataArray[] = {groupNumber, cellStringNumber};
-	sendCan(&hcan1, requestDataArray, 2, CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B, 0, 0);
+void bms_request_individual_cell_balancing_rate_type_B(uint8_t group, uint8_t cellStr) {
+    uint8_t data[2] = {group, cellStr};
+    sendCan(CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B, data, 2, 0, 0);
 }
 
-void bms_request_state_of_charge_parameters()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_STATE_OF_CHARGE, 0, 0);
+void bms_request_state_of_charge_parameters() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_STATE_OF_CHARGE, empty, 0, 0, 0);
 }
 
-void bms_request_set_state_of_charge(uint8_t newStateOfCharge)
-{
-	uint8_t requestDataArray[] = {0, 0, 0, 0 ,0, 0, newStateOfCharge, 0};
-	sendCan(&hcan1, requestDataArray, 8, CAN_BMS_STATE_OF_CHARGE, 0, 0);
+void bms_request_set_state_of_charge(uint8_t newStateOfCharge) {
+    uint8_t data[8] = {0, 0, 0, 0, 0, 0, newStateOfCharge, 0};
+    sendCan(CAN_BMS_STATE_OF_CHARGE, data, 8, 0, 0);
 }
 
-void bms_request_contactor_control(uint8_t contactorState)
-{
-	uint8_t requestDataArray[] = {contactorState};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_CONTACTOR_CONTROL, 0, 0);
+void bms_request_contactor_control(uint8_t state) {
+    uint8_t data[1] = {state};
+    sendCan(CAN_BMS_CONTACTOR_CONTROL, data, 1, 0, 0);
 }
 
-void bms_request_energy_parameters()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_ENERGY_PARAM, 0, 0);
+void bms_request_energy_parameters() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_ENERGY_PARAM, empty, 0, 0, 0);
 }
 
-void bms_request_all_statistics()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_STATS, 0, 0);
+void bms_request_all_statistics() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_STATS, empty, 0, 0, 0);
 }
 
-void bms_request_inidividual_statistic(uint8_t statisticID)
-{
-	uint8_t requestDataArray[] = {statisticID};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_STATS, 0, 0);
+void bms_request_inidividual_statistic(uint8_t statID) {
+    uint8_t data[1] = {statID};
+    sendCan(CAN_BMS_STATS, data, 1, 0, 0);
 }
 
-void bms_request_clear_all_statistics()
-{
-	uint8_t clearStats = 0xFF;
-	uint8_t requestDataArray[] = {clearStats};
-	sendCan(&hcan1, requestDataArray, 1, CAN_BMS_STATS, 0, 0);
+void bms_request_clear_all_statistics() {
+    uint8_t data[1] = {0xFF};
+    sendCan(CAN_BMS_STATS, data, 1, 0, 0);
 }
 
-void bms_request_all_events()
-{
-	uint8_t emptyDataArray[] = {0, 0, 0, 0 ,0, 0, 0, 0};
-	sendCan(&hcan1, emptyDataArray, 0, CAN_BMS_EVENTS, 0, 0);
+void bms_request_all_events() {
+    uint8_t empty[8] = {0};
+    sendCan(CAN_BMS_EVENTS, empty, 0, 0, 0);
 }
 
-void bms_request_clear_all_events()
-{
-	uint8_t clearStats = 0xFF;
-	uint8_t reqeustDataArray[] = {clearStats};
-	sendCan(&hcan1, reqeustDataArray, 1, CAN_BMS_EVENTS, 0, 0);
+void bms_request_clear_all_events() {
+    uint8_t data[1] = {0xFF};
+    sendCan(CAN_BMS_EVENTS, data, 1, 0, 0);
 }
-
 // Getters
 // Overall status getters
 uint8_t get_bms_input_signals()

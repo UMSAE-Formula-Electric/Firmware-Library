@@ -147,7 +147,7 @@ void UpdateMCState(int16_t mc_trottle_val) {
 			//neg means go
 			EnableMC();
 			motor_controller_state = MC_ENABLED;
-			logMessage("MC: Enable MC\n", false);
+//			logMessage("MC: Enable MC\n", false);
 		}
 		break;
 	case MC_ENABLED:
@@ -155,9 +155,86 @@ void UpdateMCState(int16_t mc_trottle_val) {
 			//soft disable MC to coast
 			DisableMC();
 			motor_controller_state = MC_DISABLED;
-			logMessage("MC: Disable MC\n", false);
+//			logMessage("MC: Disable MC\n", false);
 		}
 	}
+}
+
+void MotorController_Process(uint32_t can_id, const uint8_t data[8])
+{
+    switch (can_id)
+    {
+        case CAN_MC_RX_TEMP1_ID:
+            mc_process_temp1_can(data);
+            break;
+
+        case CAN_MC_RX_TEMP2_ID:
+            mc_process_temp2_can(data);
+            break;
+
+        case CAN_MC_RX_TEMP3_ID:
+            mc_process_temp3_can(data);
+            break;
+
+        case CAN_MC_RX_ANALOG_INPUTS_VOLTAGE:
+            mc_process_analog_inputs_voltage_can(data);
+            break;
+
+        case CAN_MC_RX_DIGITAL_INPUT_STATUS:
+            mc_process_digital_input_status_can(data);
+            break;
+
+        case CAN_MC_RX_MOTOR_ID:
+            mc_process_motor_can(data);
+            break;
+
+        case CAN_MC_RX_CURRENT_ID:
+            mc_process_current_can(data);
+            break;
+
+        case CAN_MC_RX_VOLT_ID:
+            mc_process_volt_can(data);
+            break;
+
+        case CAN_MC_RX_FAULT_ID:
+            mc_process_fault_can(data);
+            break;
+
+        case CAN_MC_RX_INTERNAL_VOLTAGES:
+            mc_process_internal_volt_can(data);
+            break;
+
+        case CAN_MC_RX_INTERNAL_STATES:
+            mc_process_internal_states_can(data);
+            break;
+
+        case CAN_MC_RX_TORQUE_TIMER_INFO:
+            mc_process_torque_timer_info_can(data);
+            break;
+
+        case CAN_MC_RX_MODULATION_INDEX:
+            mc_process_modulation_index_can(data);
+            break;
+
+        case CAN_MC_RX_FIRMWARE_INFO:
+            mc_process_firmware_info_can(data);
+            break;
+
+        case CAN_MC_RX_DIAGNOSTIC_DATA:
+            mc_process_diagnostic_data_can(data);
+            break;
+
+        case CAN_MC_RX_HIGHSPEED:
+            mc_process_fast_can(data);
+            break;
+
+        case CAN_MC_RX_TORQUE_CAPABILITY:
+            mc_process_torque_capability_can(data);
+            break;
+
+        default:
+            break;
+    }
 }
 
 _Bool isMcCanId(uint16_t canId){
@@ -265,12 +342,12 @@ float mc_get_current_C(){
     return  (float)mc_currentC / 10;
 }
 
-float mc_getBusCurrent() {
-	return (float)bus_current * 10;
+uint16_t mc_getBusCurrent() {
+	return bus_current / 10;
 }
 
-float mc_getBusVoltage() {
-    return (float)bus_voltage / 10;
+uint16_t mc_getBusVoltage() {
+    return bus_voltage / 10;
 }
 
 float mc_getOutputVoltage(){
@@ -842,7 +919,7 @@ void mc_process_motor_can(uint8_t * data) {
      * 6,7 Delta Resolver Filtered
      */
     mc_angle = (int16_t )((data[1] << 8) | data[0]);
-	mc_speed = (int16_t )((data[3] << 8) | data[2]);
+    mc_rpm = (int16_t )((data[3] << 8) | data[2]);
     mc_Electrical_output_freq =(int16_t )((data[5] << 8) | data[4]);
     mc_delta_resolver_filtered = (int16_t )((data[7] << 8) | data[6]);
 }
@@ -862,42 +939,31 @@ void mc_process_current_can(uint8_t * data) {
  *	Sent whenever a torque request is read by the APPS
  */
 void mc_send_command_msg(uint8_t mode) {
-	uint8_t len = 8; // DLC MUST be 8 for command message, this is the sendCan bug
-	uint8_t data[len];
-	uint8_t dest = MC_COMMAND_MSG;
+    uint8_t len = 8;
+    uint8_t data[8] = {0};
+    uint32_t dest = MC_COMMAND_MSG;
 
-	uint8_t ret = 0;
+    if (mode == TORQUE_MODE) {
+        data[0] = mc_torque & 0xFF;
+        data[1] = (mc_torque >> 8) & 0xFF;
+        data[4] = mc_direction;
+        data[5] = mc_enable_inverter;
+    } else if (mode == SPEED_MODE) {
+        data[2] = mc_speed & 0xFF;
+        data[3] = (mc_speed >> 8) & 0xFF;
+        data[4] = mc_direction;
+        data[5] = (mc_enable_inverter) | (mc_enable_discharge << 1) | 0x04;
+        data[6] = mc_torque_limit & 0xFF;
+        data[7] = (mc_torque_limit >> 8) & 0xFF;
+    }
 
-	//Torque Mode
-	if (mode == TORQUE_MODE) {
-		data[0] = mc_torque & 0xFF;
-		data[1] = (mc_torque >> 8) & 0xFF;
-		data[2] = 0x00;
-		data[3] = 0x00;
-		data[4] = mc_direction;
-		data[5] = (mc_enable_inverter);
-		data[6] = 0x00;
-		data[7] = 0x00;
-	}
-	//Speed Mode, Set 0x04 bit in data[5] to denote.
-	//Probably not used in epbr22
-	else if (mode == SPEED_MODE) {
-		data[0] = 0x00;
-		data[1] = 0x00;
-		data[2] = mc_speed & 0xFF;
-		data[3] = (mc_speed >> 8) & 0xFF;
-		data[4] = mc_direction;
-		data[5] = (mc_enable_inverter) | (mc_enable_discharge << 1) | 0x04;
-		data[6] = mc_torque_limit & 0xFF;
-		data[7] = (mc_torque_limit >> 8) & 0xFF;
-	}
+    // No more &hcan1!
+    uint8_t ret = sendCan(dest, data, len, 0, 0);
 
-	ret = sendCan(&hcan1, data, len, dest, CAN_RTR_DATA, CAN_NO_EXT);
-	if (ret != 0) {
-		//can error, log it
-		log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-		logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
-	}
+    if (ret != 0) {
+//        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
+//        logMessage("MC: Failed to send MC command\n", false);
+    }
 }
 
 void sendTorque(int16_t torque) {
@@ -916,11 +982,11 @@ void sendTorque(int16_t torque) {
     data[6] = 0x00;
     data[7] = 0x00;
 
-    ret = sendCan(&hcan1, data, len, dest, CAN_RTR_DATA, CAN_NO_EXT);
+    ret = sendCan(dest,data, len, CAN_NO_RTR, CAN_NO_EXT);
     if (ret != 0) {
         //can error, log it
-        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+//        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
+//        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
     }
 }
 
@@ -1005,11 +1071,11 @@ void fixFaults() {
     data[6] = 0;
     data[7] = 0;
 
-    ret = sendCan(&hcan1, data, len, dest, CAN_NO_RTR, CAN_NO_EXT);
+    ret = sendCan(dest, data, len, CAN_NO_RTR, CAN_NO_EXT);
     if (ret != 0) {
         //can error, log it
-        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
-        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
+//        log_and_handle_error(ERROR_CAN_ONE_TX_FAIL, NULL);
+//        logMessage("MC: Failed to send MC command CAN packet\n", false); //should be critical??
     }
 }
 

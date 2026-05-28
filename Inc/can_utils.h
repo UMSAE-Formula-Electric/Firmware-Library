@@ -11,7 +11,6 @@
 /* Defines */
 #include "main.h"
 #include <stdint.h>
-#include "stm32f4xx_hal.h"
 #include "cmsis_os2.h"
 
 #define CAN_MC_QUEUE_LENGTH 		64
@@ -53,17 +52,17 @@
 
 extern osMessageQueueId_t canRxPacketQueueHandle;
 extern osMessageQueueId_t canTxPacketQueueHandle;
-extern CAN_HandleTypeDef hcan1;
 
-typedef struct {
-    CAN_RxHeaderTypeDef rxPacketHeader;
-    uint8_t rxPacketData[8];
-} CAN_RxPacketTypeDef;
 
-typedef struct {
-    CAN_TxHeaderTypeDef txPacketHeader;
-    uint8_t txPacketData[8];
-} CAN_TxPacketTypeDef;
+//typedef struct {
+//    CAN_RxHeaderTypeDef rxPacketHeader;
+//    uint8_t rxPacketData[8];
+//} CAN_RxPacketTypeDef;
+//
+//typedef struct {
+//    CAN_TxHeaderTypeDef txPacketHeader;
+//    uint8_t txPacketData[8];
+//} CAN_TxPacketTypeDef;
 
 enum STARTUP_STATUS_NOTIFY_MSG{
     CAN_ACB_TSA_ACK = 0,
@@ -83,6 +82,6 @@ enum STARTUP_STATUS_NOTIFY_MSG{
 /* End Defines */
 
 /* Prototypes */
-uint8_t sendCan(CAN_HandleTypeDef* hcan, uint8_t const * data, uint32_t length, uint32_t dest, uint32_t canRTR, uint8_t isExtended);
+uint8_t sendCan(uint32_t dest, const uint8_t *data, uint32_t length, uint32_t canRTR, uint8_t isExtended);
 /* End Prototypes */
 #endif /* INC_CAN_UTILS_H_ */

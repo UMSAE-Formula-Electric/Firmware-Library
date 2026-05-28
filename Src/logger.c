@@ -1,4 +1,5 @@
 // Includes
+#if LOGGER_H_
 #include "logger.h"
 #include "usart.h"
 #include "FreeRTOS.h"
@@ -220,4 +221,4 @@ void vUSARTLoggerTask(void *pvParameters) {
         osDelay(DELAY);
     }
 }
-
+#endif

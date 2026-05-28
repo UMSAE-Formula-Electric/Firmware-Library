@@ -1,3 +1,4 @@
+#if ERROR_HANDLER_
 #include <error_handler.h>
 #include "stdlib.h"
 #include "stdint.h"
@@ -101,3 +102,5 @@ void log_and_handle_error(error_case_t error, void (*errorHandlerFcn)(void)){
 		//setLedState(Other Pretty colours)
 	}
 }
+
+#endif

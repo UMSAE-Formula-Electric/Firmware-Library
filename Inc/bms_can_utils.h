@@ -4,8 +4,9 @@
 
 #ifndef BMS_CAN_UTILS_H
 #define BMS_CAN_UTILS_H
-
-#include "can.h"
+#include "stdint.h"
+#include "can_utils.h"
+#include "can_types.h"
 
 // The number of cells in the accumulator (270 cells for ePBR24)
 #define NUM_CELLS 270
@@ -50,6 +51,8 @@
 
 void init_bms();		// init the bms data structures and mutex
 
+void BMS_Process(uint32_t canID, const uint8_t data[8]);
+
 _Bool isBmsCanId(uint32_t canID);
 
 int bms_getHighTemp();
@@ -66,7 +69,7 @@ void process_bms_temp_packet(uint8_t * Data);
 void process_bms_diagnostic_packet(uint8_t * Data);
 
 // new function headers
-void process_typeA_and_typeB_can_packets(CAN_RxPacketTypeDef * packetToProcess);
+void process_typeA_and_typeB_can_packets(can_frame_t *frame);
 void process_bms_module_temp_can(uint8_t * Data);
 // void process_bms_cell_temp_can(uint8_t * Data);
 void process_bms_cell_temp_balancing_rate_can(uint8_t * Data);

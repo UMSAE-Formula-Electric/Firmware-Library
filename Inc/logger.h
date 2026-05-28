@@ -1,5 +1,5 @@
-#ifndef LOGGER_H_
-#define LOGGER_H_
+#if LOGGER_H_
+//#define LOGGER_H_
 
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
