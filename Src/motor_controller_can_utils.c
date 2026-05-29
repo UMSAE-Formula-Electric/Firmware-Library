@@ -910,7 +910,7 @@ void mc_send_command_msg(uint8_t mode) {
 void sendTorque(int16_t torque) {
 	uint8_t len = 8; // DLC MUST be 8 for command message, this is the sendCan bug
     uint8_t data[len];
-    uint8_t dest = 0xC0;
+    uint8_t dest = MC_COMMAND_MSG;
 
     uint8_t ret = 0;
 

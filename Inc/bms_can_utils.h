@@ -5,44 +5,13 @@
 #ifndef BMS_CAN_UTILS_H
 #define BMS_CAN_UTILS_H
 
-#include "can.h"
+#include "can_utils.h"
 
 // The number of cells in the accumulator (270 cells for ePBR24)
 #define NUM_CELLS 270
 #define NUM_CELL_PER_EMUS_CELL 3
 #define NUM_EMUS_CELLS (NUM_CELLS / NUM_CELL_PER_EMUS_CELL)
 #define CELLS_PER_CAN_FRAME	8
-
-#define CAN_BMS_BASE_ID         0x100
-
-#define CAN_BMS_OVERALL_ID		CAN_BMS_BASE_ID + 0
-#define CAN_BMS_DIAGNOSTIC_ID	CAN_BMS_BASE_ID + 7
-#define CAN_BMS_VOLTAGE_ID		CAN_BMS_BASE_ID + 1
-
-// starting at "individual cell voltages" in the document we are using the option B version of the CAN ID
-#define CAN_BMS_MODULE_TEMPERATURE				CAN_BMS_BASE_ID + 2
-#define CAN_BMS_CELL_TEMPERATURE				CAN_BMS_BASE_ID + 8
-#define CAN_BMS_CELL_BALANCING_RATE				CAN_BMS_BASE_ID + 3
-
-/* TYPE-A CAN IDs are a range of values found dynamically instead of being defined here (look at the function
- * "process_typeA_and_typeB_can_packets" to see the different ranges of CAN IDs.
- *
- * Below are the respective TYPE-B CAN IDs
- */
-#define CAN_BMS_INDIVIDUAL_CELL_VOLTAGES_TYPE_B			CAN_BMS_BASE_ID + 11
-#define CAN_BMS_INDIVIDUAL_CELL_MODULE_TEMPS_TYPE_B		CAN_BMS_BASE_ID + 12
-#define CAN_BMS_INDIVIDUAL_CELL_TEMPS_TYPE_B			CAN_BMS_BASE_ID + 14
-#define CAN_BMS_INDIVIDUAL_CELL_BALANCING_RATE_TYPE_B	CAN_BMS_BASE_ID + 13
-
-#define CAN_BMS_STATE_OF_CHARGE					CAN_BMS_BASE_ID + 5
-
-// skipped config params, Log in/Log out, set a new password (all password stuff) in the EMUS document (add later if needed)
-// might not need the next 3 defines
-#define CAN_BMS_CONTACTOR_CONTROL 				CAN_BMS_BASE_ID + 129
-#define CAN_BMS_ENERGY_PARAM					CAN_BMS_BASE_ID + 6
-#define CAN_BMS_STATS							CAN_BMS_BASE_ID + 132
-
-#define CAN_BMS_EVENTS							CAN_BMS_BASE_ID + 133
 
 /**
  * Function defs
