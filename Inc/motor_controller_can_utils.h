@@ -1,9 +1,13 @@
-
+/*
+ * Created on May 22, 2026
+ * Created by Cedric Caparas
+ * Master CAN mapping removed and centralized to can_utils.h
+ */
 
 #ifndef _MOTOR_CONTROLLER_CAN_H
 #define _MOTOR_CONTROLLER_CAN_H
 
-#include "stdint.h"
+#include "can_utils.h"
 
 //Defines
 
@@ -18,29 +22,8 @@
 #define MC_COMMAND_READ 	0
 #define MC_COMMAND_WRITE 	1
 
-#define MC_COMMAND_MSG			 0x0C0
-#define MC_PARAM_COMMAND_MSG	 0x0C1
-
 #define MC_ENABLE_BYTE_4 		 0b11100101
 #define MC_ENABLE_BYTE_5		 0b00000000
-
-#define CAN_MC_RX_TEMP1_ID					0x0A0
-#define CAN_MC_RX_TEMP2_ID					0x0A1
-#define CAN_MC_RX_TEMP3_ID					0x0A2
-#define CAN_MC_RX_ANALOG_INPUTS_VOLTAGE		0x0A3
-#define CAN_MC_RX_DIGITAL_INPUT_STATUS		0x0A4
-#define CAN_MC_RX_MOTOR_ID					0x0A5
-#define CAN_MC_RX_CURRENT_ID				0x0A6
-#define CAN_MC_RX_VOLT_ID					0x0A7
-#define CAN_MC_RX_FAULT_ID					0x0AB
-#define CAN_MC_RX_INTERNAL_VOLTAGES 		0x0A9
-#define CAN_MC_RX_INTERNAL_STATES			0x0AA
-#define CAN_MC_RX_TORQUE_TIMER_INFO			0x0AC
-#define CAN_MC_RX_MODULATION_INDEX			0x0AD
-#define CAN_MC_RX_FIRMWARE_INFO				0x0AE
-#define CAN_MC_RX_DIAGNOSTIC_DATA			0x0AF
-#define CAN_MC_RX_HIGHSPEED					0x0B0
-#define CAN_MC_RX_TORQUE_CAPABILITY			0x0B1
 
 #define PEAK_TORQUE			230	//Peak torque for EMRAX 228 motor
 
@@ -124,8 +107,6 @@ float mc_getFeedbackTorque();
 
 
 float mc_getOutputVoltage();
-
-
 
 //Setters
 void mc_set_torque_limit(int setTorque);
