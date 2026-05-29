@@ -38,10 +38,9 @@
 #define CAN_AMS_CAN_ID          0x70
 #define CAN_VCU_LOG_ID			0x71
 
-/* HeartBeats */
-#define CAN_ACU_TO_VCU_ID           0x016 // Dec: 22 (Fixed from 0x002)
-#define CAN_VCU_TO_ACU_ID           0x017 // Dec: 23 (Fixed from 0x003)
-#define CAN_VCU_SET_ACB_STATE_ID	0x015 // Dec: 21 (Fixed from 0x01)
+#define CAN_ACU_TO_VCU_ID           0x002 // Dec: 2
+#define CAN_VCU_TO_ACU_ID           0x003 // Dec: 3
+#define CAN_VCU_SET_ACB_STATE_ID	0x001 // Dec: 1
 
 // ==============================================================================
 // MOTOR CONTROLLER CAN IDs (Cascadia Motion)
