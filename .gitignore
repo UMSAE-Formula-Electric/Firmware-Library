@@ -1,0 +1,8 @@
+.project
+.cproject
+.settings/
+.metadata/
+
+Debug/
+Release/
+build/
