@@ -11,6 +11,7 @@ enum CAR_STATE{
 
 };
 
+void car_state_init(void);
 void set_car_state(enum CAR_STATE new_state);
 enum CAR_STATE get_car_state();
 
