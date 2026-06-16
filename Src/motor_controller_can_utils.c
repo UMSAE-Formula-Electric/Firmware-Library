@@ -645,7 +645,7 @@ void mc_process_digital_input_status_can(uint8_t * data){
 }
 
 void mc_process_fault_can(uint8_t * inData) {
-    if((inData[7] & 64) || 1) {
+    if((inData[7] & 64)) {
         //resolver fault
         DisableMC();
         sendTorque(0);
