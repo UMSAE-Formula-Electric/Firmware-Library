@@ -434,11 +434,20 @@ void process_bms_cell_temp_balancing_rate_can(uint8_t * Data) {
 
 // type A and B functions are in one big function
 
-void process_bms_state_of_charge_can(uint8_t * Data) {
-	//TODO: BMS_FUNCTION state of charge
-	BMS_CURRENT = (Data[0] << 8) | Data[1];
-	BMS_ESTIMATED_CHARGE = (Data[2] << 8) | Data[3];
-	BMS_ESTIMATED_STATE_OF_CHARGE = Data[6];
+void process_bms_state_of_charge_can(uint8_t *Data) {
+    /* 0.1 A units, signed: negative = discharging */
+    BMS_CURRENT = (int16_t)(((uint16_t)Data[0] << 8) | Data[1]);
+
+    /* 0.1 Ah units */
+    BMS_ESTIMATED_CHARGE = ((uint16_t)Data[2] << 8) | Data[3];
+
+    /* Data[4] reserved */
+
+    /* 0.01 % units -> 0..10000 */
+    BMS_ESTIMATED_STATE_OF_CHARGE = ((uint16_t)Data[5] << 8) | Data[6];
+
+    /* 1 % units */
+    BMS_ESTIMATED_STATE_OF_HEALTH = Data[7];
 }
 
 /**
